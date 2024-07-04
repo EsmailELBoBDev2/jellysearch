@@ -8,12 +8,6 @@ public static class JellyfinHelper
         {
             case "Movie":
                 return "MediaBrowser.Controller.Entities.Movies.Movie";
-            case "LiveTvProgram":
-                return "unknown"; // TODO
-            case "AudioBook":
-                return "unknown"; // TODO
-            case "AudioBookBoxSet":
-                return "unknown"; // TODO
             case "Episode":
                 return "MediaBrowser.Controller.Entities.TV.Episode";
             case "Series":
@@ -27,13 +21,23 @@ public static class JellyfinHelper
             case "Video":
                 return "MediaBrowser.Controller.Entities.Video";
             case "TvChannel":
-                return "unknown"; // TODO
+                return "MediaBrowser.Controller.LiveTv.LiveTvChannel";
+            case "LiveTvProgram":
+                return "MediaBrowser.Controller.LiveTv.LiveTvProgram";
             case "PhotoAlbum":
-                return "unknown"; // TODO
+                return "MediaBrowser.Controller.Entities.PhotoAlbum";
             case "Photo":
-                return "unknown"; // TODO
+                return "MediaBrowser.Controller.Entities.Photo";
+            case "Book":
+                return "MediaBrowser.Controller.Entities.Book";
+            case "AudioBook":
+                return "MediaBrowser.Controller.Entities.AudioBook";
+            case "AudioBookBoxSet":
+                return "MediaBrowser.Controller.Entities.Unknown"; // TODO
+            case "BoxSet":
+                return "MediaBrowser.Controller.Entities.Movies.BoxSet";
             default:
-                return null;
+                return "unknown";
         }
     }
 }
