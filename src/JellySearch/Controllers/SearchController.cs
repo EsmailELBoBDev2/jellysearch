@@ -22,12 +22,12 @@ public class SearchController : ControllerBase
     }
 
     [HttpGet("/Users/{userId}/Items")]
-    public async Task<string> Search([FromRoute]string userId, [FromQuery]string? searchTerm, [FromQuery]string? IncludeItemTypes)
+    public async Task<IActionResult> Search([FromRoute]string userId, [FromQuery]string? searchTerm, [FromQuery]string? IncludeItemTypes)
     {
         if (searchTerm == null)
         {
             this.Log.LogInformation("Proxying non-search request");
-            return await this.Proxy.ProxySearchRequest(userId, Request.QueryString.ToString());
+            return Content(await this.Proxy.ProxySearchRequest(userId, Request.QueryString.ToString()), "application/json");
         }
         else
         {
@@ -57,23 +57,23 @@ public class SearchController : ControllerBase
 
                 query.Add("ids", string.Join(',', results.Hits.Select(x => x.Guid)));
 
-                return await this.Proxy.ProxySearchRequest(userId, query);
+                return Content(await this.Proxy.ProxySearchRequest(userId, query), "application/json");
             }
             else
             {
                 this.Log.LogInformation("No hits, not proxying");
-                return JellyfinResponses.Empty;
+                return Content(JellyfinResponses.Empty, "application/json");
             }
         }
     }
 
     [HttpGet("/Artists")]
-    public async Task<string> SearchArtists([FromQuery]string? searchTerm, [FromQuery] string userId)
+    public async Task<IActionResult> SearchArtists([FromQuery]string? searchTerm, [FromQuery] string userId)
     {
         if (searchTerm == null)
         {
             this.Log.LogInformation("Proxying non-search artist request");
-            return await this.Proxy.ProxySearchRequest(userId, Request.QueryString.ToString());
+            return Content(await this.Proxy.ProxySearchRequest(userId, Request.QueryString.ToString()), "application/json");
         }
         else
         {
@@ -91,22 +91,23 @@ public class SearchController : ControllerBase
 
                 query.Add("ids", string.Join(',', results.Hits.Select(x => x.Guid)));
 
-                return await this.Proxy.ProxySearchRequest(userId, query);
+                return Content(await this.Proxy.ProxySearchRequest(userId, query), "application/json");
             }
             else
             {
                 this.Log.LogInformation("No hits, not proxying");
-                return JellyfinResponses.Empty;
+                return Content(JellyfinResponses.Empty, "application/json");
             }
         }
     }
 
     [HttpGet("/Persons")]
-    public async Task<string> SearchPeople([FromQuery]string? searchTerm, [FromQuery] string userId)
+    public async Task<IActionResult> SearchPeople([FromQuery]string? searchTerm, [FromQuery] string userId)
     {
         if (searchTerm == null)
         {
-            return "PROXY";
+            this.Log.LogInformation("Proxying non-search people request");
+            return Content(await this.Proxy.ProxySearchRequest(userId, Request.QueryString.ToString()), "application/json");
         }
         else
         {
@@ -124,12 +125,12 @@ public class SearchController : ControllerBase
 
                 query.Add("ids", string.Join(',', results.Hits.Select(x => x.Guid)));
 
-                return await this.Proxy.ProxySearchRequest(userId, query);
+                return Content(await this.Proxy.ProxySearchRequest(userId, query), "application/json");
             }
             else
             {
                 this.Log.LogInformation("No hits, not proxying");
-                return JellyfinResponses.Empty;
+                return Content(JellyfinResponses.Empty, "application/json");
             }
         }
     }
