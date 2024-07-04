@@ -9,7 +9,7 @@ public class JellyfinProxyService : IHostedService, IDisposable
     private ILogger Log { get; set; }
 
     private string? JellyfinUrl { get; set; } = Environment.GetEnvironmentVariable("JELLYFIN_URL");
-    private string? JellyfinToken { get; set; } = Environment.GetEnvironmentVariable("JELLYFIN_TOKEN");
+    //private string? JellyfinToken { get; set; } = Environment.GetEnvironmentVariable("JELLYFIN_TOKEN");
 
     private string JellyfinSearchUrl { get; } = "{0}/Users/{1}/Items{2}";
 
@@ -21,7 +21,6 @@ public class JellyfinProxyService : IHostedService, IDisposable
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        this.Client.DefaultRequestHeaders.Add("Authorization", string.Format("MediaBrowser Client=\"JellySearch\", Token=\"{0}\"", this.JellyfinToken));
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
@@ -29,15 +28,21 @@ public class JellyfinProxyService : IHostedService, IDisposable
         this.Dispose();
     }
 
-    public async Task<string> ProxySearchRequest(string userId, Dictionary<string, StringValues> arguments)
+    public async Task<string> ProxySearchRequest(string authorization, string userId, Dictionary<string, StringValues> arguments)
     {
-        var response = await this.Client.GetAsync(string.Format(this.JellyfinSearchUrl, this.JellyfinUrl, userId, HttpHelper.GetQueryString(arguments)));
+        var request = new HttpRequestMessage(HttpMethod.Get, string.Format(this.JellyfinSearchUrl, this.JellyfinUrl, userId, HttpHelper.GetQueryString(arguments)));
+        request.Headers.Add("Authorization", authorization);
+
+        var response = await this.Client.SendAsync(request);
         return await response.Content.ReadAsStringAsync();
     }
 
-    public async Task<string> ProxySearchRequest(string userId, string query)
+    public async Task<string> ProxySearchRequest(string authorization, string userId, string query)
     {
-        var response = await this.Client.GetAsync(string.Format(this.JellyfinSearchUrl, this.JellyfinUrl, userId, query));
+        var request = new HttpRequestMessage(HttpMethod.Get, string.Format(this.JellyfinSearchUrl, this.JellyfinUrl, userId, query));
+        request.Headers.Add("Authorization", authorization);
+
+        var response = await this.Client.SendAsync(request);
         return await response.Content.ReadAsStringAsync();
     }
 

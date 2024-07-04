@@ -1,3 +1,4 @@
+using System.Text.Json;
 using JellySearch.Jellyfin;
 using JellySearch.Models;
 using JellySearch.Services;
@@ -21,25 +22,78 @@ public class SearchController : ControllerBase
         this.Index = index;
     }
 
+    /// <summary>
+    /// Proxy all possible search URLs to the central Items endpoint
+    /// </summary>
+    /// <param name="searchTerm">The term that is searched for.</param>
+    /// <param name="includeItemTypes">The type of item to search</param>
+    /// <param name="userId">The user id of the current user</param>
+    /// <returns></returns>
     [HttpGet("/Users/{userId}/Items")]
-    public async Task<IActionResult> Search([FromRoute]string userId, [FromQuery]string? searchTerm, [FromQuery]string? IncludeItemTypes)
+    [HttpGet("/Persons")]
+    [HttpGet("/Artists/AlbumArtists")]
+    [HttpGet("/Artists")]
+    [HttpGet("/Genres")]
+    public async Task<IActionResult> Search([FromHeader]string? authorization, [FromQuery]string? searchTerm, [FromQuery]string? includeItemTypes, [FromRoute(Name = "UserId")]string? routeUserId, [FromQuery(Name = "UserId")] string? queryUserId)
     {
+        // Get the requested path
+        var path = this.Request.Path.Value;
+
+        // Get the user id from either the route or the query
+        var userId = routeUserId ?? queryUserId;
+
+        if(userId == null)
+        {
+            return Content(JellyfinResponses.Empty, "application/json");
+        }
+
+        if(authorization == null)
+        {
+            return Content(JellyfinResponses.Empty, "application/json");
+        }
+
         if (searchTerm == null)
         {
-            this.Log.LogInformation("Proxying non-search request");
-            return Content(await this.Proxy.ProxySearchRequest(userId, Request.QueryString.ToString()), "application/json");
+            // If the search term is empty, we will proxy directly
+            this.Log.LogWarning("Proxying non-search album artist request, make sure to configure your reverse proxy correctly");
+            return Content(await this.Proxy.ProxySearchRequest(authorization, userId, Request.QueryString.ToString()), "application/json");
         }
         else
         {
-            var query = Request.Query.Where(x => x.Key != "searchTerm").ToDictionary();
+            // Get all query arguments except the search term
+            var query = this.Request.Query.Where(x => !string.Equals(x.Key, "searchterm", StringComparison.InvariantCultureIgnoreCase)).ToDictionary();
 
             List<string> filters = new List<string>();
 
-            if (IncludeItemTypes != null)
+            if(includeItemTypes == null)
             {
-                foreach (var includeType in IncludeItemTypes.Split(','))
+                if (path != null)
                 {
-                    var type = JellyfinHelper.GetFullItemType(includeType);
+                    // Handle direct endpoints and their types
+                    if (path.EndsWith("/Persons"))
+                    {
+                        filters.Add("type = MediaBrowser.Controller.Entities.Person");
+                    }
+                    else if (path.EndsWith("/Artists"))
+                    {
+                        filters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist");
+                    }
+                    else if (path.EndsWith("/AlbumArtists"))
+                    {
+                        filters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist"); // There is no separate type for album artists; TODO: Find other way to separately search them
+                    }
+                    else if (path.EndsWith("/Genres"))
+                    {
+                        filters.Add("type = MediaBrowser.Controller.Entities.Genre");
+                    }
+                }
+            }
+            else
+            {
+                // Get item type(s) from URL
+                foreach (var includeItemType in includeItemTypes.Split(','))
+                {
+                    var type = JellyfinHelper.GetFullItemType(includeItemType);
 
                     filters.Add("type = " + type);
                 }
@@ -57,75 +111,7 @@ public class SearchController : ControllerBase
 
                 query.Add("ids", string.Join(',', results.Hits.Select(x => x.Guid)));
 
-                return Content(await this.Proxy.ProxySearchRequest(userId, query), "application/json");
-            }
-            else
-            {
-                this.Log.LogInformation("No hits, not proxying");
-                return Content(JellyfinResponses.Empty, "application/json");
-            }
-        }
-    }
-
-    [HttpGet("/Artists")]
-    public async Task<IActionResult> SearchArtists([FromQuery]string? searchTerm, [FromQuery] string userId)
-    {
-        if (searchTerm == null)
-        {
-            this.Log.LogInformation("Proxying non-search artist request");
-            return Content(await this.Proxy.ProxySearchRequest(userId, Request.QueryString.ToString()), "application/json");
-        }
-        else
-        {
-            var query = Request.Query.Where(x => x.Key != "searchTerm").ToDictionary();
-
-            var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
-            {
-                Filter = "type = MediaBrowser.Controller.Entities.Audio.MusicArtist",
-                Limit = 20,
-            });
-
-            if (results.Hits.Count > 0)
-            {
-                this.Log.LogInformation("Proxying artist search request with {hits} results", results.Hits.Count);
-
-                query.Add("ids", string.Join(',', results.Hits.Select(x => x.Guid)));
-
-                return Content(await this.Proxy.ProxySearchRequest(userId, query), "application/json");
-            }
-            else
-            {
-                this.Log.LogInformation("No hits, not proxying");
-                return Content(JellyfinResponses.Empty, "application/json");
-            }
-        }
-    }
-
-    [HttpGet("/Persons")]
-    public async Task<IActionResult> SearchPeople([FromQuery]string? searchTerm, [FromQuery] string userId)
-    {
-        if (searchTerm == null)
-        {
-            this.Log.LogInformation("Proxying non-search people request");
-            return Content(await this.Proxy.ProxySearchRequest(userId, Request.QueryString.ToString()), "application/json");
-        }
-        else
-        {
-            var query = Request.Query.Where(x => x.Key != "searchTerm").ToDictionary();
-
-            var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
-            {
-                Filter = "type = MediaBrowser.Controller.Entities.Person",
-                Limit = 20,
-            });
-
-            if (results.Hits.Count > 0)
-            {
-                this.Log.LogInformation("Proxying people search request with {hits} results", results.Hits.Count);
-
-                query.Add("ids", string.Join(',', results.Hits.Select(x => x.Guid)));
-
-                return Content(await this.Proxy.ProxySearchRequest(userId, query), "application/json");
+                return Content(await this.Proxy.ProxySearchRequest(authorization, userId, query), "application/json");
             }
             else
             {
