@@ -35,7 +35,6 @@ var indexTrigger = TriggerBuilder.Create()
     .StartNow()
     .Build();
 
-
-//await scheduler.ScheduleJob(indexJob, indexTrigger);
+await scheduler.ScheduleJob(indexJob, indexTrigger);
 
 app.Run();
