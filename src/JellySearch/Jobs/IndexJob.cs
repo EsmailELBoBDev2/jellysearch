@@ -38,7 +38,7 @@ public class IndexJob : IJob
             // Open Jellyfin library
             var connectionString = new SqliteConnectionStringBuilder
             {
-                DataSource = this.JellyfinConfigDir + "/library.db",
+                DataSource = this.JellyfinConfigDir + "/data/library.db",
                 Mode = SqliteOpenMode.ReadOnly,
             };
 
