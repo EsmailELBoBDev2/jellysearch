@@ -32,12 +32,10 @@ public static class JellyfinHelper
                 return "MediaBrowser.Controller.Entities.Book";
             case "AudioBook":
                 return "MediaBrowser.Controller.Entities.AudioBook";
-            case "AudioBookBoxSet":
-                return "MediaBrowser.Controller.Entities.Unknown"; // TODO
             case "BoxSet":
                 return "MediaBrowser.Controller.Entities.Movies.BoxSet";
             default:
-                return "unknown";
+                return "MediaBrowser.Controller.Entities.Unknown";
         }
     }
 }
