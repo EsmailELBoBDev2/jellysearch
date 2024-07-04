@@ -47,7 +47,7 @@ public class SearchController : ControllerBase
 
             var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
             {
-                Filter = string.Join(" AND ", filters),
+                Filter = filters.Count > 0 ? string.Join(" AND ", filters) : null,
                 Limit = 20,
             });
 
