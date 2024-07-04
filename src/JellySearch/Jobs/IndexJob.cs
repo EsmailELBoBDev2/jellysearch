@@ -22,7 +22,7 @@ public class IndexJob : IJob
 
             // Only need to filter by type
             await index.UpdateFilterableAttributesAsync(
-                new string[] { "type" }
+                new string[] { "type", "parentId", "isFolder" }
             );
 
             // Change priority of fields; Meilisearch always uses camel case!
@@ -47,7 +47,7 @@ public class IndexJob : IJob
 
             // Query all base items
             using var command = connection.CreateCommand();
-            command.CommandText = "SELECT guid, type, Name, Overview, ProductionYear, OriginalTitle, SeriesName, Artists, AlbumArtists FROM TypedBaseItems";
+            command.CommandText = "SELECT guid, type, ParentId, Name, Overview, ProductionYear, IsFolder, OriginalTitle, SeriesName, Artists, AlbumArtists FROM TypedBaseItems";
 
             using var reader = await command.ExecuteReaderAsync();
 
@@ -59,13 +59,15 @@ public class IndexJob : IJob
                 {
                     Guid = reader.GetGuid(0).ToString(),
                     Type = !reader.IsDBNull(1) ? reader.GetString(1) : null,
-                    Name = !reader.IsDBNull(2) ? reader.GetString(2) : null,
-                    Overview = !reader.IsDBNull(3) ? reader.GetString(3) : null,
-                    ProductionYear = !reader.IsDBNull(4) ? reader.GetInt32(4) : null,
-                    OriginalTitle = !reader.IsDBNull(5) ? reader.GetString(5) : null,
-                    SeriesName = !reader.IsDBNull(6) ? reader.GetString(6) : null,
-                    Artists = !reader.IsDBNull(7) ? reader.GetString(7) : null,
-                    AlbumArtists = !reader.IsDBNull(8) ? reader.GetString(8) : null,
+                    ParentId = !reader.IsDBNull(2) ? reader.GetString(2) : null,
+                    Name = !reader.IsDBNull(3) ? reader.GetString(3) : null,
+                    Overview = !reader.IsDBNull(4) ? reader.GetString(4) : null,
+                    ProductionYear = !reader.IsDBNull(5) ? reader.GetInt32(5) : null,
+                    IsFolder = !reader.IsDBNull(6) ? reader.GetInt16(6) : null,
+                    OriginalTitle = !reader.IsDBNull(7) ? reader.GetString(7) : null,
+                    SeriesName = !reader.IsDBNull(8) ? reader.GetString(8) : null,
+                    Artists = !reader.IsDBNull(9) ? reader.GetString(9) : null,
+                    AlbumArtists = !reader.IsDBNull(10) ? reader.GetString(10) : null,
                 };
 
                 items.Add(item);

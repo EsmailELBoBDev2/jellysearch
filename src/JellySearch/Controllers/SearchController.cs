@@ -81,7 +81,8 @@ public class SearchController : ControllerBase
                     }
                     else if (path.EndsWith("/AlbumArtists"))
                     {
-                        filters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist"); // There is no separate type for album artists; TODO: Find other way to separately search them
+                        filters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist");
+                        filters.Add("isFolder = 1"); // Album artists are marked as folder
                     }
                     else if (path.EndsWith("/Genres"))
                     {
