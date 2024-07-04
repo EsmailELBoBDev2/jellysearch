@@ -4,6 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>JellySearch</RootNamespace>
+    <AssemblyName>jellysearch</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

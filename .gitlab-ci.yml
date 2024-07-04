@@ -1,0 +1,27 @@
+# Build .NET core project and Docker container
+
+image: docker:latest
+
+stages:
+  - build-dotnet
+  - build-docker
+
+build-dotnet:
+  stage: build-dotnet
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  script:
+    - dotnet publish src/JellySearch -c Release -o app/
+  artifacts:
+    paths:
+      - app/
+    expire_in: 20m
+
+build-docker:
+  stage: build-docker
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+    - docker build --pull -t "$CI_REGISTRY_IMAGE" .
+    - docker push "$CI_REGISTRY_IMAGE"

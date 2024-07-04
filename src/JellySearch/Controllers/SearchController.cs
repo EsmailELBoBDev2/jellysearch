@@ -1,6 +1,3 @@
-using System.Text.Json;
-using Jellyfin.Data.Enums;
-using JellySearch.Helpers;
 using JellySearch.Jellyfin;
 using JellySearch.Models;
 using JellySearch.Services;

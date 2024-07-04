@@ -9,8 +9,8 @@ public class IndexJob : IJob
 {
     private string? JellyfinConfigDir { get; } = Environment.GetEnvironmentVariable("JELLYFIN_CONFIG_DIR");
 
-    private string? MeilisearchUrl { get; } = Environment.GetEnvironmentVariable("MEILISEARCH_URL");
-    private string? MeilisearchKey { get; } = Environment.GetEnvironmentVariable("MEILISEARCH_KEY");
+    private string? MeilisearchUrl { get; } = Environment.GetEnvironmentVariable("MEILI_URL");
+    private string? MeilisearchKey { get; } = Environment.GetEnvironmentVariable("MEILI_MASTER_KEY");
 
     public async Task Execute(IJobExecutionContext context)
     {

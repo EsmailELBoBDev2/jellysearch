@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://0.0.0.0:5000"); // Listen on every IP
 builder.Services.AddControllers();
 
-var meilisearch = new MeilisearchClient(Environment.GetEnvironmentVariable("MEILISEARCH_URL"), Environment.GetEnvironmentVariable("MEILISEARCH_KEY"));
+var meilisearch = new MeilisearchClient(Environment.GetEnvironmentVariable("MEILI_URL"), Environment.GetEnvironmentVariable("MEILI_MASTER_KEY"));
 var index = meilisearch.Index("items");
 
 builder.Services.AddSingleton<Meilisearch.Index>(index); // Add Meilisearch index as service
