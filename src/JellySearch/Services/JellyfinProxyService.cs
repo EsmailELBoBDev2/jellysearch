@@ -12,6 +12,7 @@ public class JellyfinProxyService : IHostedService, IDisposable
     //private string? JellyfinToken { get; set; } = Environment.GetEnvironmentVariable("JELLYFIN_TOKEN");
 
     private string JellyfinSearchUrl { get; } = "{0}/Users/{1}/Items{2}";
+    private string JellyfinAltSearchUrl { get; } = "{0}/Items{1}";
 
     public JellyfinProxyService(ILoggerFactory logFactory)
     {
@@ -28,18 +29,27 @@ public class JellyfinProxyService : IHostedService, IDisposable
         this.Dispose();
     }
 
-    public async Task<string> ProxySearchRequest(string authorization, string userId, Dictionary<string, StringValues> arguments)
+    private string GetUrl(string authorization, string? userId, string query)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, string.Format(this.JellyfinSearchUrl, this.JellyfinUrl, userId, HttpHelper.GetQueryString(arguments)));
+        if(userId == null)
+            return string.Format(this.JellyfinAltSearchUrl, this.JellyfinUrl, query); // Search without user ID (e.g. genres)
+        else
+            return string.Format(this.JellyfinSearchUrl, this.JellyfinUrl, userId, query);
+
+    }
+
+    public async Task<string> ProxySearchRequest(string authorization, string? userId, Dictionary<string, StringValues> arguments)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, this.GetUrl(authorization, userId, HttpHelper.GetQueryString(arguments)));
         request.Headers.Add("Authorization", authorization);
 
         var response = await this.Client.SendAsync(request);
         return await response.Content.ReadAsStringAsync();
     }
 
-    public async Task<string> ProxySearchRequest(string authorization, string userId, string query)
+    public async Task<string> ProxySearchRequest(string authorization, string? userId, string query)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, string.Format(this.JellyfinSearchUrl, this.JellyfinUrl, userId, query));
+        var request = new HttpRequestMessage(HttpMethod.Get, this.GetUrl(authorization, userId, query));
         request.Headers.Add("Authorization", authorization);
 
         var response = await this.Client.SendAsync(request);

@@ -42,11 +42,6 @@ public class SearchController : ControllerBase
         // Get the user id from either the route or the query
         var userId = routeUserId ?? queryUserId;
 
-        if(userId == null)
-        {
-            return Content(JellyfinResponses.Empty, "application/json");
-        }
-
         if(authorization == null)
         {
             return Content(JellyfinResponses.Empty, "application/json");
