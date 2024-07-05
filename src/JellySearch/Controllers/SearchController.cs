@@ -100,7 +100,14 @@ public class SearchController : ControllerBase
                 {
                     var type = JellyfinHelper.GetFullItemType(includeItemType);
 
-                    orFilters.Add("type = " + type);
+                    if(type == null)
+                    {
+                        this.Log.LogWarning("Got invalid type: {type}", includeItemType);
+                    }
+                    else
+                    {
+                        orFilters.Add("type = " + type);
+                    }
                 }
             }
 

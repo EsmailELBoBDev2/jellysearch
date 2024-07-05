@@ -37,7 +37,7 @@ public static class JellyfinHelper
             case "BoxSet":
                 return "MediaBrowser.Controller.Entities.Movies.BoxSet";
             default:
-                return "MediaBrowser.Controller.Entities.Unknown";
+                return null;
         }
     }
 }
