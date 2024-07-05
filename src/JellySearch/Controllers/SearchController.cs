@@ -145,7 +145,7 @@ public class SearchController : ControllerBase
                     var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
                     {
                         Filter = filter,
-                        Limit = 25,
+                        Limit = 15,
                     });
 
                     items.AddRange(results.Hits);
@@ -156,7 +156,7 @@ public class SearchController : ControllerBase
                 // Search without filtering the type
                 var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
                 {
-                    Limit = 25,
+                    Limit = 20,
                 });
 
                 items.AddRange(results.Hits);
@@ -168,7 +168,12 @@ public class SearchController : ControllerBase
 
                 query.Add("ids", string.Join(',', items.Select(x => x.Guid.Replace("-", ""))));
 
-                return Content(await this.Proxy.ProxySearchRequest(authorization, userId, query), "application/json");
+                var response = await this.Proxy.ProxySearchRequest(authorization, userId, query);
+
+                if(response == null)
+                    return Content(JellyfinResponses.Empty, "application/json");
+                else
+                    return Content(response, "application/json");
             }
             else
             {
