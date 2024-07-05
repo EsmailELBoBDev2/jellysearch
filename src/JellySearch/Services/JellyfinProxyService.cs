@@ -29,7 +29,7 @@ public class JellyfinProxyService : IHostedService, IDisposable
         this.Dispose();
     }
 
-    private string GetUrl(string authorization, string? userId, string query)
+    private string GetUrl(string? userId, string query)
     {
         if(userId == null)
             return string.Format(this.JellyfinAltSearchUrl, this.JellyfinUrl, query); // Search without user ID (e.g. genres)
@@ -38,19 +38,23 @@ public class JellyfinProxyService : IHostedService, IDisposable
 
     }
 
-    public async Task<string> ProxySearchRequest(string authorization, string? userId, Dictionary<string, StringValues> arguments)
+    public async Task<string> ProxySearchRequest(string? authorization, string? userId, Dictionary<string, StringValues> arguments)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, this.GetUrl(authorization, userId, HttpHelper.GetQueryString(arguments)));
-        request.Headers.Add("Authorization", authorization);
+        var request = new HttpRequestMessage(HttpMethod.Get, this.GetUrl(userId, HttpHelper.GetQueryString(arguments)));
+
+        if(authorization != null)
+            request.Headers.Add("Authorization", authorization);
 
         var response = await this.Client.SendAsync(request);
         return await response.Content.ReadAsStringAsync();
     }
 
-    public async Task<string> ProxySearchRequest(string authorization, string? userId, string query)
+    public async Task<string> ProxyRequest(string? authorization, string path, string query)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, this.GetUrl(authorization, userId, query));
-        request.Headers.Add("Authorization", authorization);
+        var request = new HttpRequestMessage(HttpMethod.Get, string.Format("{0}{1}{2}", this.JellyfinUrl, path, query));
+
+        if(authorization != null)
+            request.Headers.Add("Authorization", authorization);
 
         var response = await this.Client.SendAsync(request);
         return await response.Content.ReadAsStringAsync();

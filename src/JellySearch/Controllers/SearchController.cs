@@ -43,8 +43,8 @@ public class SearchController : ControllerBase
 
         if(authorization == null)
         {
-            this.Log.LogWarning("Denying request without Authorization header");
-            return Content(JellyfinResponses.Empty, "application/json");
+            this.Log.LogWarning("Received request without Authorization header");
+            //return Content(JellyfinResponses.Empty, "application/json");
         }
 
         // If not searching, proxy directly for reverse proxies that cannot filter by query parameter
@@ -53,7 +53,7 @@ public class SearchController : ControllerBase
         {
             // If the search term is empty, we will proxy directly
             this.Log.LogWarning("Proxying non-search request, make sure to configure your reverse proxy correctly");
-            return Content(await this.Proxy.ProxySearchRequest(authorization, userId, Request.QueryString.ToString()), "application/json");
+            return Content(await this.Proxy.ProxyRequest(authorization, this.Request.Path, this.Request.QueryString.ToString()), "application/json");
         }
         else
         {
