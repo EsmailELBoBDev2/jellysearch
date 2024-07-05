@@ -28,14 +28,19 @@ Running outside of Docker works but you're on your own right now. If you get it 
 * Jellyfin for Android
 * Jellyfin for Android TV
 * Finamp (Android & Linux)
+* Findroid
 * Delfin
+* Jellyfin Vue*
+
+\* Works but is still pretty slow
 
 ### Currently not working
 
 * Gelli
-* Jellyfin Vue
 
-Audio books and Live TV were not tested. Genre searches are currently not working and are passed along directly to the Jellyfin server.
+Audio books and Live TV were not tested.
+
+Genre searches are currently not working and are passed along directly to the Jellyfin server. If you have an exotic client which can do filtering and searching at the same time, this will probably break things.
 
 ## Setup
 
