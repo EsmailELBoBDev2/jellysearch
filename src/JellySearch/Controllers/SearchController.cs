@@ -65,21 +65,21 @@ public class SearchController : ControllerBase
                 !string.Equals(x.Key, "searchterm", StringComparison.InvariantCultureIgnoreCase) &&
                 !string.Equals(x.Key, "sortby", StringComparison.InvariantCultureIgnoreCase) &&
                 !string.Equals(x.Key, "sortorder", StringComparison.InvariantCultureIgnoreCase)
-            ).ToDictionary();
+            ).ToDictionary(StringComparer.InvariantCultureIgnoreCase);
 
             var includeItemTypes = new List<string>();
 
-            if(query.ContainsKey("includeItemTypes"))
+            if(query.ContainsKey("IncludeItemTypes"))
             {
-                if(query["includeItemTypes"].Count == 1)
+                if(query["IncludeItemTypes"].Count == 1)
                 {
                     // If item count is 1, split by , and add all elements
-                    includeItemTypes.AddRange(query["includeItemTypes"][0].Split(','));
+                    includeItemTypes.AddRange(query["IncludeItemTypes"][0].Split(','));
                 }
                 else
                 {
                     // If item count is more than 1, add all elements directly
-                    includeItemTypes.AddRange(query["includeItemTypes"]);
+                    includeItemTypes.AddRange(query["IncludeItemTypes"]);
                 }
             }
 
