@@ -1,0 +1,37 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    volumes:
+      - config:/config
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.jellyfin.loadbalancer.server.port=8096
+
+      - traefik.http.routers.jellyfin.rule=Host(`demo.jellyfin.org`)
+
+    ...rest of your jellyfin config
+
+  jellysearch:
+    image: domistyle/jellysearch
+    restart: unless-stopped
+    volumes:
+      - config:/config:ro
+    environment:
+      MEILI_MASTER_KEY: "1234"
+      INDEX_CRON: "0 0 0/2 ? * * *"
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.jellysearch.loadbalancer.server.port=5000
+
+      - traefik.http.routers.jellysearch.rule=Host(`demo.jellyfin.org`) && !Path(`/Genres`) && (QueryRegexp(`searchTerm`, `(.*?)`) || QueryRegexp(`SearchTerm`, `(.*?)`))
+  meilisearch:
+    image: getmeili/meilisearch:v1.9
+    restart: unless-stopped
+    volumes:
+      - meilisearch:/meili_data
+    environment:
+      MEILI_MASTER_KEY: "1234"
+
+volumes:
+  config:
+  meilisearch:
