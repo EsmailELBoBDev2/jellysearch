@@ -7,6 +7,17 @@ using Quartz.Impl;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.UseUrls("http://0.0.0.0:5000"); // Listen on every IP
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddControllers();
 
 var meilisearch = new MeilisearchClient(Environment.GetEnvironmentVariable("MEILI_URL"), Environment.GetEnvironmentVariable("MEILI_MASTER_KEY"));
