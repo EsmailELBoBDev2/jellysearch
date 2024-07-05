@@ -61,10 +61,12 @@ public class SearchController : ControllerBase
             // Get all query arguments to pass along to Jellyfin
             // Remove searchterm since we already searched
             // Remove sortby and sortorder since we want to display results as Meilisearch returns them
+            // Remove includeItemTypes since we request the IDs directly
             var query = this.Request.Query.Where(x =>
                 !string.Equals(x.Key, "searchterm", StringComparison.InvariantCultureIgnoreCase) &&
                 !string.Equals(x.Key, "sortby", StringComparison.InvariantCultureIgnoreCase) &&
-                !string.Equals(x.Key, "sortorder", StringComparison.InvariantCultureIgnoreCase)
+                !string.Equals(x.Key, "sortorder", StringComparison.InvariantCultureIgnoreCase) &&
+                !string.Equals(x.Key, "includeItemTypes", StringComparison.InvariantCultureIgnoreCase)
             ).ToDictionary();
 
             var includeItemTypes = new List<string>();
