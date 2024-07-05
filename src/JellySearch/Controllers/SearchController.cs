@@ -66,7 +66,7 @@ public class SearchController : ControllerBase
                 !string.Equals(x.Key, "searchterm", StringComparison.InvariantCultureIgnoreCase) &&
                 !string.Equals(x.Key, "sortby", StringComparison.InvariantCultureIgnoreCase) &&
                 !string.Equals(x.Key, "sortorder", StringComparison.InvariantCultureIgnoreCase) &&
-                !string.Equals(x.Key, "includeItemTypes", StringComparison.InvariantCultureIgnoreCase)
+                !string.Equals(x.Key, "includeitemtypes", StringComparison.InvariantCultureIgnoreCase)
             ).ToDictionary();
 
             var includeItemTypes = new List<string>();
