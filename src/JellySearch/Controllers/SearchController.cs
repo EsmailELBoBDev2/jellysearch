@@ -108,15 +108,15 @@ public class SearchController : ControllerBase
 
             if(orFilters.Count > 0)
             {
-                filters += string.Join(" OR ", filters);
+                filters += string.Join(" OR ", orFilters);
             }
 
             if(andFilters.Count > 0)
             {
                 if(filters == "")
-                    filters += string.Join(" AND ", filters);
+                    filters += string.Join(" AND ", andFilters);
                 else
-                    filters += " AND " + string.Join(" AND ", filters);
+                    filters += " AND " + string.Join(" AND ", andFilters);
             }
 
             var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
