@@ -34,7 +34,7 @@ public class SearchController : ControllerBase
     [HttpGet("/Artists/AlbumArtists")]
     [HttpGet("/Artists")]
     [HttpGet("/Genres")]
-    public async Task<IActionResult> Search([FromHeader]string? authorization, [FromQuery]string? searchTerm, [FromQuery]string? includeItemTypes, [FromRoute(Name = "UserId")]string? routeUserId, [FromQuery(Name = "UserId")] string? queryUserId)
+    public async Task<IActionResult> Search([FromHeader]string? authorization, [FromQuery]string? searchTerm, [FromRoute(Name = "UserId")]string? routeUserId, [FromQuery(Name = "UserId")] string? queryUserId)
     {
         // Get the requested path
         var path = this.Request.Path.Value;
@@ -67,10 +67,26 @@ public class SearchController : ControllerBase
                 !string.Equals(x.Key, "sortorder", StringComparison.InvariantCultureIgnoreCase)
             ).ToDictionary();
 
+            var includeItemTypes = new List<string>();
+
+            if(query.ContainsKey("includeItemTypes"))
+            {
+                if(query["includeItemTypes"].Count == 1)
+                {
+                    // If item count is 1, split by , and add all elements
+                    includeItemTypes.AddRange(query["includeItemTypes"][0].Split(','));
+                }
+                else
+                {
+                    // If item count is more than 1, add all elements directly
+                    includeItemTypes.AddRange(query["includeItemTypes"]);
+                }
+            }
+
             var orFilters = new List<string>();
             var andFilters = new List<string>();
 
-            if(includeItemTypes == null)
+            if(includeItemTypes.Count == 0)
             {
                 if (path != null)
                 {
@@ -97,7 +113,7 @@ public class SearchController : ControllerBase
             else
             {
                 // Get item type(s) from URL
-                foreach (var includeItemType in includeItemTypes.Split(','))
+                foreach (var includeItemType in includeItemTypes)
                 {
                     var type = JellyfinHelper.GetFullItemType(includeItemType);
 
