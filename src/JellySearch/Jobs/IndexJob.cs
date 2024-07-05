@@ -80,7 +80,7 @@ public class IndexJob : IJob
                 await index.AddDocumentsInBatchesAsync<Item>(items, 5000, "guid");
             }
 
-            this.Log.LogError("Indexed {count} items, it might take a few moments for MeiliSearch to finish indexing", items.Count);
+            this.Log.LogInformation("Indexed {count} items, it might take a few moments for MeiliSearch to finish indexing", items.Count);
         }
         catch (Exception e)
         {
