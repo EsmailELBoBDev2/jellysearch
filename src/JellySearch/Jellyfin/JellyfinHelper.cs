@@ -16,6 +16,8 @@ public static class JellyfinHelper
                 return "MediaBrowser.Controller.Playlists.Playlist";
             case "MusicAlbum":
                 return "MediaBrowser.Controller.Entities.Audio.MusicAlbum";
+            case "MusicArtist":
+                return "MediaBrowser.Controller.Entities.Audio.MusicArtist";
             case "Audio":
                 return "MediaBrowser.Controller.Entities.Audio.Audio";
             case "Video":
