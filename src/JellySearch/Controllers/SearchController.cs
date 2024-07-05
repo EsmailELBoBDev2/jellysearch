@@ -83,8 +83,8 @@ public class SearchController : ControllerBase
                 }
             }
 
-            var orFilters = new List<string>();
-            var andFilters = new List<string>();
+            var filteredTypes = new List<string>();
+            var additionalFilters = new List<string>();
 
             if(includeItemTypes.Count == 0)
             {
@@ -93,20 +93,20 @@ public class SearchController : ControllerBase
                     // Handle direct endpoints and their types
                     if (path.EndsWith("/Persons"))
                     {
-                        orFilters.Add("type = MediaBrowser.Controller.Entities.Person");
+                        filteredTypes.Add("MediaBrowser.Controller.Entities.Person");
                     }
                     else if (path.EndsWith("/Artists"))
                     {
-                        orFilters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist");
+                        filteredTypes.Add("MediaBrowser.Controller.Entities.Audio.MusicArtist");
                     }
                     else if (path.EndsWith("/AlbumArtists"))
                     {
-                        orFilters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist");
-                        andFilters.Add("isFolder = 1"); // Album artists are marked as folder
+                        filteredTypes.Add("MediaBrowser.Controller.Entities.Audio.MusicArtist");
+                        additionalFilters.Add("isFolder = 1"); // Album artists are marked as folder
                     }
                     else if (path.EndsWith("/Genres"))
                     {
-                        orFilters.Add("type = MediaBrowser.Controller.Entities.Genre"); // TODO: Handle genre search properly
+                        filteredTypes.Add("MediaBrowser.Controller.Entities.Genre"); // TODO: Handle genre search properly
                     }
                 }
             }
@@ -123,38 +123,50 @@ public class SearchController : ControllerBase
                     }
                     else
                     {
-                        orFilters.Add("type = " + type);
+                        filteredTypes.Add(type);
                     }
                 }
             }
 
-            string filters = ""; // TODO: Make this nicer
+            var items = new List<Item>();
 
-            if(orFilters.Count > 0)
+            if (filteredTypes.Count > 0)
             {
-                filters += string.Join(" OR ", orFilters);
+                // Loop through each requested type and search
+                foreach (var filteredType in filteredTypes)
+                {
+                    var filter = "type = " + filteredType;
+
+                    if(additionalFilters.Count > 0)
+                    {
+                        filter += " AND " + string.Join(" AND ", additionalFilters);
+                    }
+
+                    var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
+                    {
+                        Filter = filter,
+                        Limit = 25,
+                    });
+
+                    items.AddRange(results.Hits);
+                }
+            }
+            else
+            {
+                // Search without filtering the type
+                var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
+                {
+                    Limit = 25,
+                });
+
+                items.AddRange(results.Hits);
             }
 
-            if(andFilters.Count > 0)
+            if (items.Count > 0)
             {
-                if(filters == "")
-                    filters += string.Join(" AND ", andFilters);
-                else
-                    filters += " AND " + string.Join(" AND ", andFilters);
-            }
+                this.Log.LogInformation("Proxying search request with {hits} results", items.Count);
 
-            var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
-            {
-                Filter = filters != "" ? filters : null,
-                Limit = 25,
-            });
-
-            if (results.Hits.Count > 0)
-            {
-                this.Log.LogInformation("Proxying search request with {hits} results", results.Hits.Count);
-
-                query.Add("ids", string.Join(',', results.Hits.Select(x => x.Guid)));
-                query.Remove("includeItemTypes"); // Remove includeItemTypes since we specify the IDs directly
+                query.Add("ids", string.Join(',', items.Select(x => x.Guid.Replace("-", ""))));
 
                 return Content(await this.Proxy.ProxySearchRequest(authorization, userId, query), "application/json");
             }
