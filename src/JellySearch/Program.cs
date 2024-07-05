@@ -10,7 +10,7 @@ builder.WebHost.UseUrls("http://0.0.0.0:5000"); // Listen on every IP
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowAllOrigins", policy =>
     {
         policy.AllowAnyOrigin()
             .AllowAnyMethod()
@@ -35,6 +35,7 @@ builder.Services.AddSingleton<IScheduler>(scheduler); // Add Quartz scheduler as
 
 var app = builder.Build();
 
+app.UseCors("AllowAllOrigins");
 app.MapControllers();
 
 await scheduler.Start();
@@ -44,7 +45,6 @@ var indexJobData = new JobDataMap
     { "index", index },
     { "logFactory", app.Services.GetRequiredService<ILoggerFactory>() },
 };
-
 
 var indexJob = JobBuilder.Create<IndexJob>()
     .WithIdentity("indexJob")
