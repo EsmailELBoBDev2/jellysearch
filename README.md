@@ -83,7 +83,7 @@ Besides JellySearch, you need a running MeiliSearch instance. If you use docker 
 ### Setting up the reverse proxy
 The reverse proxy should be set up in a way which forwards every request that contains the query argument `searchTerm` (case-insensitive!) but not requests to `/Genres` to the JellySearch server.
 
-If your reverse proxy does not support matching query arguments, you can also forward any request to once of the search endpoints. JellySearch will automatically pass non-search requests along to the Jellyfin server.
+If your reverse proxy does not support matching query arguments, you can also forward any request. JellySearch will automatically pass non-search requests along to the Jellyfin server.
 
 #### Traefik
 In Traefik you can simply add a new rule to the JellySearch container:
@@ -93,5 +93,6 @@ In Traefik you can simply add a new rule to the JellySearch container:
 ```
 
 Make sure `demo.jellyfin.org` is your Jellyfin host and is identical between your Jellyfin and JellySearch containers.
+
 #### Other
 In principle any reverse proxy which can redirect certain paths to a different backend should work. Currently only Traefik was tested.
