@@ -1,4 +1,3 @@
-using System.Text.Json;
 using JellySearch.Jellyfin;
 using JellySearch.Models;
 using JellySearch.Services;
@@ -44,13 +43,16 @@ public class SearchController : ControllerBase
 
         if(authorization == null)
         {
+            this.Log.LogWarning("Denying request without Authorization header");
             return Content(JellyfinResponses.Empty, "application/json");
         }
 
-        if (searchTerm == null)
+        // If not searching, proxy directly for reverse proxies that cannot filter by query parameter
+        // Genres are currently not supported
+        if (searchTerm == null || path.EndsWith("/Genres"))
         {
             // If the search term is empty, we will proxy directly
-            this.Log.LogWarning("Proxying non-search album artist request, make sure to configure your reverse proxy correctly");
+            this.Log.LogWarning("Proxying non-search request, make sure to configure your reverse proxy correctly");
             return Content(await this.Proxy.ProxySearchRequest(authorization, userId, Request.QueryString.ToString()), "application/json");
         }
         else
@@ -64,7 +66,7 @@ public class SearchController : ControllerBase
                 !string.Equals(x.Key, "sortorder", StringComparison.InvariantCultureIgnoreCase)
             ).ToDictionary();
 
-            List<string> filters = new List<string>();
+            var filters = new List<string>();
 
             if(includeItemTypes == null)
             {
@@ -86,13 +88,14 @@ public class SearchController : ControllerBase
                     }
                     else if (path.EndsWith("/Genres"))
                     {
-                        filters.Add("type = MediaBrowser.Controller.Entities.Genre");
+                        filters.Add("type = MediaBrowser.Controller.Entities.Genre"); // TODO: Handle genre search properly
                     }
                 }
             }
             else
             {
                 // Get item type(s) from URL
+                // TODO: Properly handle multiple types
                 foreach (var includeItemType in includeItemTypes.Split(','))
                 {
                     var type = JellyfinHelper.GetFullItemType(includeItemType);

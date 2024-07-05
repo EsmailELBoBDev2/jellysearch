@@ -1,24 +1,25 @@
 using Quartz;
 using Microsoft.Data.Sqlite;
 using JellySearch.Models;
-using Meilisearch;
 
 namespace JellySearch.Jobs;
 
 public class IndexJob : IJob
 {
     private string? JellyfinConfigDir { get; } = Environment.GetEnvironmentVariable("JELLYFIN_CONFIG_DIR");
-
-    private string? MeilisearchUrl { get; } = Environment.GetEnvironmentVariable("MEILI_URL");
-    private string? MeilisearchKey { get; } = Environment.GetEnvironmentVariable("MEILI_MASTER_KEY");
+    private ILogger? Log { get; set; }
 
     public async Task Execute(IJobExecutionContext context)
     {
+        var jobData = context.JobDetail.JobDataMap;
+        var index = jobData["index"] as Meilisearch.Index;
+
+        var logFactory = jobData["logFactory"] as ILoggerFactory;
+        this.Log = logFactory.CreateLogger<IndexJob>();
+
         try
         {
-            var meilisearch = new MeilisearchClient(this.MeilisearchUrl, this.MeilisearchKey);
-
-            var index = meilisearch.Index("items");
+            this.Log.LogInformation("Indexing items...");
 
             // Only need to filter by type
             await index.UpdateFilterableAttributesAsync(
@@ -79,12 +80,12 @@ public class IndexJob : IJob
                 await index.AddDocumentsInBatchesAsync<Item>(items, 5000, "guid");
             }
 
-            Console.WriteLine("Done");
+            this.Log.LogError("Indexed {count} items, it might take a few moments for MeiliSearch to finish indexing", items.Count);
         }
         catch (Exception e)
         {
-            Console.WriteLine(e.Message);
-            Console.WriteLine(e.StackTrace);
+            this.Log.LogError("{message}", e.Message);
+            this.Log.LogError("{stacktrace}", e.StackTrace);
             throw e;
         }
     }

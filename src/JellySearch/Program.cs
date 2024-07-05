@@ -17,24 +17,47 @@ builder.Services.AddSingleton<Meilisearch.Index>(index); // Add Meilisearch inde
 builder.Services.AddSingleton<JellyfinProxyService, JellyfinProxyService>(); // Add proxy service
 builder.Services.AddHostedService<JellyfinProxyService>(provider => provider.GetService<JellyfinProxyService>());
 
+var factory = new StdSchedulerFactory();
+var scheduler = await factory.GetScheduler();
+
+builder.Services.AddSingleton<IScheduler>(scheduler); // Add Quartz scheduler as service
+
 var app = builder.Build();
 
 app.MapControllers();
 
-var factory = new StdSchedulerFactory();
-var scheduler = await factory.GetScheduler();
-
 await scheduler.Start();
 
+var indexJobData = new JobDataMap
+{
+    { "index", index },
+    { "logFactory", app.Services.GetRequiredService<ILoggerFactory>() },
+};
+
+
 var indexJob = JobBuilder.Create<IndexJob>()
-    .WithIdentity("indexJob", "jellysearch")
+    .WithIdentity("indexJob")
+    .UsingJobData(indexJobData)
+    .StoreDurably()
+    .DisallowConcurrentExecution()
     .Build();
 
-var indexTrigger = TriggerBuilder.Create()
-    .WithIdentity("indexTrigger", "jellysearch")
-    .StartNow()
-    .Build();
+var indexCron = Environment.GetEnvironmentVariable("INDEX_CRON");
 
-await scheduler.ScheduleJob(indexJob, indexTrigger);
+if (indexCron != null)
+{
+    var indexTrigger = TriggerBuilder.Create()
+        .WithIdentity("indexTrigger")
+        .WithCronSchedule(indexCron)
+        .Build();
+
+    await scheduler.ScheduleJob(indexJob, indexTrigger); // Schedule job with the given cron string
+}
+else
+{
+    await scheduler.AddJob(indexJob, true); // Add job but don't schedule
+}
+
+await scheduler.TriggerJob(new JobKey("indexJob")); // Run sync on start
 
 app.Run();
