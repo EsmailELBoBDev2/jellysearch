@@ -29,6 +29,7 @@ public class SearchController : ControllerBase
     /// <param name="userId">The user id of the current user</param>
     /// <returns></returns>
     [HttpGet("/Users/{userId}/Items")]
+    [HttpGet("/Items")]
     [HttpGet("/Persons")]
     [HttpGet("/Artists/AlbumArtists")]
     [HttpGet("/Artists")]
