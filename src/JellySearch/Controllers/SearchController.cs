@@ -66,7 +66,8 @@ public class SearchController : ControllerBase
                 !string.Equals(x.Key, "sortorder", StringComparison.InvariantCultureIgnoreCase)
             ).ToDictionary();
 
-            var filters = new List<string>();
+            var orFilters = new List<string>();
+            var andFilters = new List<string>();
 
             if(includeItemTypes == null)
             {
@@ -75,39 +76,53 @@ public class SearchController : ControllerBase
                     // Handle direct endpoints and their types
                     if (path.EndsWith("/Persons"))
                     {
-                        filters.Add("type = MediaBrowser.Controller.Entities.Person");
+                        orFilters.Add("type = MediaBrowser.Controller.Entities.Person");
                     }
                     else if (path.EndsWith("/Artists"))
                     {
-                        filters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist");
+                        orFilters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist");
                     }
                     else if (path.EndsWith("/AlbumArtists"))
                     {
-                        filters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist");
-                        filters.Add("isFolder = 1"); // Album artists are marked as folder
+                        orFilters.Add("type = MediaBrowser.Controller.Entities.Audio.MusicArtist");
+                        andFilters.Add("isFolder = 1"); // Album artists are marked as folder
                     }
                     else if (path.EndsWith("/Genres"))
                     {
-                        filters.Add("type = MediaBrowser.Controller.Entities.Genre"); // TODO: Handle genre search properly
+                        orFilters.Add("type = MediaBrowser.Controller.Entities.Genre"); // TODO: Handle genre search properly
                     }
                 }
             }
             else
             {
                 // Get item type(s) from URL
-                // TODO: Properly handle multiple types
                 foreach (var includeItemType in includeItemTypes.Split(','))
                 {
                     var type = JellyfinHelper.GetFullItemType(includeItemType);
 
-                    filters.Add("type = " + type);
+                    orFilters.Add("type = " + type);
                 }
+            }
+
+            string filters = ""; // TODO: Make this nicer
+
+            if(orFilters.Count > 0)
+            {
+                filters += string.Join(" OR ", filters);
+            }
+
+            if(andFilters.Count > 0)
+            {
+                if(filters == "")
+                    filters += string.Join(" AND ", filters);
+                else
+                    filters += " AND " + string.Join(" AND ", filters);
             }
 
             var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
             {
-                Filter = filters.Count > 0 ? string.Join(" AND ", filters) : null,
-                Limit = 20,
+                Filter = filters != "" ? filters : null,
+                Limit = 25,
             });
 
             if (results.Hits.Count > 0)
