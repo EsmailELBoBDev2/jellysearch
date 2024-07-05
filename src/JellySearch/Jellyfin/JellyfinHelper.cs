@@ -30,6 +30,8 @@ public static class JellyfinHelper
                 return "MediaBrowser.Controller.Entities.PhotoAlbum";
             case "Photo":
                 return "MediaBrowser.Controller.Entities.Photo";
+            case "Person":
+                return "MediaBrowser.Controller.Entities.Person";
             case "Book":
                 return "MediaBrowser.Controller.Entities.Book";
             case "AudioBook":
