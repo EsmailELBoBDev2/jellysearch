@@ -34,13 +34,16 @@ public class SearchController : ControllerBase
     [HttpGet("/Artists/AlbumArtists")]
     [HttpGet("/Artists")]
     [HttpGet("/Genres")]
-    public async Task<IActionResult> Search([FromHeader]string? authorization, [FromQuery]string? searchTerm, [FromRoute(Name = "UserId")]string? routeUserId, [FromQuery(Name = "UserId")] string? queryUserId)
+    public async Task<IActionResult> Search([FromHeader(Name = "Authorization")]string? headerAuthorization, [FromHeader(Name = "X-Emby-Authorization")]string? legacyAuthorization, [FromQuery]string? searchTerm, [FromRoute(Name = "UserId")]string? routeUserId, [FromQuery(Name = "UserId")] string? queryUserId)
     {
         // Get the requested path
         var path = this.Request.Path.Value;
 
         // Get the user id from either the route or the query
         var userId = routeUserId ?? queryUserId;
+
+        // Get authorization from either the real "Authorization" header or from the legacy "X-Emby-Authorization" header
+        var authorization = headerAuthorization ?? legacyAuthorization;
 
         if (Environment.GetEnvironmentVariable("JELLYSEARCH_DEBUG_REQUESTS") == "1")
         {
@@ -62,7 +65,7 @@ public class SearchController : ControllerBase
         if(authorization == null)
         {
             this.Log.LogWarning("Received request without Authorization header");
-            //return Content(JellyfinResponses.Empty, "application/json");
+            return Content(JellyfinResponses.Empty, "application/json");
         }
 
         // If not searching, proxy directly for reverse proxies that cannot filter by query parameter
