@@ -83,10 +83,10 @@ You might have to set more environment variables if your container names differ:
 
 | Variable | Description | Default value | Required |
 | -------- | ----------- | ------------- | -------- |
-| JELLYFIN_URL | The full URL of your Jellyfin instance. | http://jellyfin:8096 | Yes |
-| JELLYFIN_CONFIG_DIR | The directory where you mounted the config folder of your Jellyfin instance. | http://jellyfin:8096 | Yes |
+| JELLYFIN_URL | The full URL of your Jellyfin instance. | `http://jellyfin:8096` | Yes |
+| JELLYFIN_CONFIG_DIR | The directory where you mounted the config folder of your Jellyfin instance. | `/config` | Yes |
 | INDEX_CRON | The cron schedule to run the reindexing at, will not reindex automatically without it set. (see https://www.quartz-scheduler.net/documentation/quartz-3.x/tutorial/crontrigger.html) | `null` | No |
-| MEILI_URL | The URL where your Meilisearch instance is reachable. | http://meilisearch:7700 | Yes |
+| MEILI_URL | The URL where your Meilisearch instance is reachable. | `http://meilisearch:7700` | Yes |
 | MEILI_MASTER_KEY | The key used to authenticate with Meilisearch. | `null` | Yes |
 
 ### Setting up the reverse proxy
