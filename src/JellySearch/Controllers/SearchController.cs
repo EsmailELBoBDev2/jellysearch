@@ -34,7 +34,12 @@ public class SearchController : ControllerBase
     [HttpGet("/Artists/AlbumArtists")]
     [HttpGet("/Artists")]
     [HttpGet("/Genres")]
-    public async Task<IActionResult> Search([FromHeader(Name = "Authorization")]string? headerAuthorization, [FromHeader(Name = "X-Emby-Authorization")]string? legacyAuthorization, [FromQuery]string? searchTerm, [FromRoute(Name = "UserId")]string? routeUserId, [FromQuery(Name = "UserId")] string? queryUserId)
+    public async Task<IActionResult> Search(
+        [FromHeader(Name = "Authorization")] string? headerAuthorization,
+        [FromHeader(Name = "X-Emby-Authorization")] string? legacyAuthorization,
+        [FromQuery]string? searchTerm,
+        [FromRoute(Name = "UserId")] string? routeUserId,
+        [FromQuery(Name = "UserId")] string? queryUserId)
     {
         // Get the requested path
         var path = this.Request.Path.Value;
@@ -43,11 +48,12 @@ public class SearchController : ControllerBase
         var userId = routeUserId ?? queryUserId;
 
         // Get authorization from either the real "Authorization" header or from the legacy "X-Emby-Authorization" header
-        var authorization = headerAuthorization ?? legacyAuthorization;
+        var authorization = legacyAuthorization ?? headerAuthorization;
 
         if (Environment.GetEnvironmentVariable("JELLYSEARCH_DEBUG_REQUESTS") == "1")
         {
             Console.WriteLine("GET " + path + " from " + userId);
+            Console.WriteLine("Using authorization: " + authorization);
 
             Console.WriteLine("HEADERS");
             foreach(var header in this.Request.Headers)
