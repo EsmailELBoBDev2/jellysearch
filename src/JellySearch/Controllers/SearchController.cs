@@ -42,6 +42,23 @@ public class SearchController : ControllerBase
         // Get the user id from either the route or the query
         var userId = routeUserId ?? queryUserId;
 
+        if (Environment.GetEnvironmentVariable("JELLYSEARCH_DEBUG_REQUESTS") == "1")
+        {
+            Console.WriteLine("GET " + path + " from " + userId);
+
+            Console.WriteLine("HEADERS");
+            foreach(var header in this.Request.Headers)
+            {
+                Console.WriteLine(header.Key + ": " + string.Join('|', header.Value));
+            }
+
+            Console.WriteLine("QUERY");
+            foreach(var query in this.Request.Query)
+            {
+                Console.WriteLine(query.Key + ": " + string.Join('|', query.Value));
+            }
+        }
+
         if(authorization == null)
         {
             this.Log.LogWarning("Received request without Authorization header");
