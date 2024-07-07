@@ -38,12 +38,14 @@ public class JellyfinProxyService : IHostedService, IDisposable
 
     }
 
-    public async Task<string?> ProxySearchRequest(string? authorization, string? userId, Dictionary<string, StringValues> arguments)
+    public async Task<string?> ProxySearchRequest(string authorization, string? legacyToken, string? userId, Dictionary<string, StringValues> arguments)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, this.GetUrl(userId, HttpHelper.GetQueryString(arguments)));
 
-        if(authorization != null)
-            request.Headers.Add("Authorization", authorization);
+        request.Headers.Add("Authorization", authorization);
+
+        if(legacyToken != null)
+            request.Headers.Add("X-Mediabrowser-Token", legacyToken);
 
         var response = await this.Client.SendAsync(request);
 
@@ -57,15 +59,25 @@ public class JellyfinProxyService : IHostedService, IDisposable
         }
     }
 
-    public async Task<string> ProxyRequest(string? authorization, string path, string query)
+    public async Task<string> ProxyRequest(string authorization, string? legacyToken, string path, string query)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, string.Format("{0}{1}{2}", this.JellyfinUrl, path, query));
 
-        if(authorization != null)
-            request.Headers.Add("Authorization", authorization);
+        request.Headers.Add("Authorization", authorization);
+
+        if(legacyToken != null)
+            request.Headers.Add("X-Mediabrowser-Token", legacyToken);
 
         var response = await this.Client.SendAsync(request);
-        return await response.Content.ReadAsStringAsync();
+
+        if(response.StatusCode == System.Net.HttpStatusCode.OK)
+            return await response.Content.ReadAsStringAsync();
+        else
+        {
+            this.Log.LogError("Got error from Jellyfin: {error}", response.StatusCode);
+            this.Log.LogError("{error}", await response.Content.ReadAsStringAsync());
+            return null;
+        }
     }
 
     public void Dispose()

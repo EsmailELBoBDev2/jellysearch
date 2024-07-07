@@ -37,6 +37,7 @@ public class SearchController : ControllerBase
     public async Task<IActionResult> Search(
         [FromHeader(Name = "Authorization")] string? headerAuthorization,
         [FromHeader(Name = "X-Emby-Authorization")] string? legacyAuthorization,
+        [FromHeader(Name = "X-Mediabrowser-Token")] string? legacyToken,
         [FromQuery]string? searchTerm,
         [FromRoute(Name = "UserId")] string? routeUserId,
         [FromQuery(Name = "UserId")] string? queryUserId)
@@ -80,7 +81,13 @@ public class SearchController : ControllerBase
         {
             // If the search term is empty, we will proxy directly
             this.Log.LogWarning("Proxying non-search request, make sure to configure your reverse proxy correctly");
-            return Content(await this.Proxy.ProxyRequest(authorization, this.Request.Path, this.Request.QueryString.ToString()), "application/json");
+
+            var response = await this.Proxy.ProxyRequest(authorization, legacyToken, this.Request.Path, this.Request.QueryString.ToString());
+
+            if(response == null)
+                    return Content(JellyfinResponses.Empty, "application/json");
+                else
+                    return Content(response, "application/json");
         }
         else
         {
@@ -194,7 +201,7 @@ public class SearchController : ControllerBase
 
                 query.Add("ids", string.Join(',', items.Select(x => x.Guid.Replace("-", ""))));
 
-                var response = await this.Proxy.ProxySearchRequest(authorization, userId, query);
+                var response = await this.Proxy.ProxySearchRequest(authorization, legacyToken, userId, query);
 
                 if(response == null)
                     return Content(JellyfinResponses.Empty, "application/json");
