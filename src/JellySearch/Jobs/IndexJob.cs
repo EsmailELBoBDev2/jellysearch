@@ -21,19 +21,29 @@ public class IndexJob : IJob
         {
             this.Log.LogInformation("Indexing items...");
 
-            // Only need to filter by type
+            // Set filterable attributes
             await index.UpdateFilterableAttributesAsync(
                 new string[] { "type", "parentId", "isFolder" }
             );
 
+            // Set sortable attributes
+            await index.UpdateSortableAttributesAsync(
+                new string[] { "communityRating", "criticRating" }
+            );
+
             // Change priority of fields; Meilisearch always uses camel case!
             await index.UpdateSearchableAttributesAsync(
-                new string[] { "name", "artists", "albumArtists", "originalTitle", "productionYear", "seriesName", "overview" }
+                new string[] { "name", "artists", "albumArtists", "originalTitle", "productionYear", "seriesName", "genres", "tags", "studios", "overview" }
             );
 
             // We only need the GUID to pass to Jellyfin
             await index.UpdateDisplayedAttributesAsync(
                 new string[] { "guid", "name" }
+            );
+
+            // Set ranking rules to add critic rating
+            await index.UpdateRankingRulesAsync(
+                new string[] { "words", "typo", "proximity", "attribute", "sort", "exactness", "communityRating:desc", "criticRating:desc" }
             );
 
             // Open Jellyfin library
@@ -48,7 +58,7 @@ public class IndexJob : IJob
 
             // Query all base items
             using var command = connection.CreateCommand();
-            command.CommandText = "SELECT guid, type, ParentId, Name, Overview, ProductionYear, IsFolder, OriginalTitle, SeriesName, Artists, AlbumArtists FROM TypedBaseItems";
+            command.CommandText = "SELECT guid, type, ParentId, CommunityRating, Name, Overview, ProductionYear, Genres, Studios, Tags, IsFolder, CriticRating, OriginalTitle, SeriesName, Artists, AlbumArtists FROM TypedBaseItems";
 
             using var reader = await command.ExecuteReaderAsync();
 
@@ -61,14 +71,19 @@ public class IndexJob : IJob
                     Guid = reader.GetGuid(0).ToString(),
                     Type = !reader.IsDBNull(1) ? reader.GetString(1) : null,
                     ParentId = !reader.IsDBNull(2) ? reader.GetString(2) : null,
-                    Name = !reader.IsDBNull(3) ? reader.GetString(3) : null,
-                    Overview = !reader.IsDBNull(4) ? reader.GetString(4) : null,
-                    ProductionYear = !reader.IsDBNull(5) ? reader.GetInt32(5) : null,
-                    IsFolder = !reader.IsDBNull(6) ? reader.GetInt16(6) : null,
-                    OriginalTitle = !reader.IsDBNull(7) ? reader.GetString(7) : null,
-                    SeriesName = !reader.IsDBNull(8) ? reader.GetString(8) : null,
-                    Artists = !reader.IsDBNull(9) ? reader.GetString(9) : null,
-                    AlbumArtists = !reader.IsDBNull(10) ? reader.GetString(10) : null,
+                    CommunityRating = !reader.IsDBNull(3) ? reader.GetInt16(3) : null,
+                    Name = !reader.IsDBNull(4) ? reader.GetString(4) : null,
+                    Overview = !reader.IsDBNull(5) ? reader.GetString(5) : null,
+                    ProductionYear = !reader.IsDBNull(6) ? reader.GetInt32(6) : null,
+                    Genres = !reader.IsDBNull(7) ? reader.GetString(7).Split('|') : null,
+                    Studios = !reader.IsDBNull(8) ? reader.GetString(8).Split('|') : null,
+                    Tags = !reader.IsDBNull(9) ? reader.GetString(9).Split('|') : null,
+                    IsFolder = !reader.IsDBNull(10) ? reader.GetInt16(10) : null,
+                    CriticRating = !reader.IsDBNull(11) ? reader.GetInt16(11) : null,
+                    OriginalTitle = !reader.IsDBNull(12) ? reader.GetString(12) : null,
+                    SeriesName = !reader.IsDBNull(13) ? reader.GetString(13) : null,
+                    Artists = !reader.IsDBNull(14) ? reader.GetString(14).Split('|') : null,
+                    AlbumArtists = !reader.IsDBNull(15) ? reader.GetString(15).Split('|') : null,
                 };
 
                 items.Add(item);
@@ -80,7 +95,7 @@ public class IndexJob : IJob
                 await index.AddDocumentsInBatchesAsync<Item>(items, 5000, "guid");
             }
 
-            this.Log.LogInformation("Indexed {count} items, it might take a few moments for MeiliSearch to finish indexing", items.Count);
+            this.Log.LogInformation("Indexed {count} items, it might take a few moments for Meilisearch to finish indexing", items.Count);
         }
         catch (Exception e)
         {

@@ -59,7 +59,7 @@ public class JellyfinProxyService : IHostedService, IDisposable
         }
     }
 
-    public async Task<string> ProxyRequest(string authorization, string? legacyToken, string path, string query)
+    public async Task<string?> ProxyRequest(string authorization, string? legacyToken, string path, string query)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, string.Format("{0}{1}{2}", this.JellyfinUrl, path, query));
 
