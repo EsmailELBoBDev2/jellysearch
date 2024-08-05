@@ -101,6 +101,8 @@ In Traefik you can simply add a new rule to the JellySearch container:
   - traefik.http.routers.jellysearch.rule=Host(`demo.jellyfin.org`) && !Path(`/Genres`) && (QueryRegexp(`searchTerm`, `(.*?)`) || QueryRegexp(`SearchTerm`, `(.*?)`))
 ```
 
+**Traefik 3.0 or higher is required since support for `QueryRegexp` is missing in Traefik 2.0.**
+
 Make sure `demo.jellyfin.org` is your Jellyfin host and is identical between your Jellyfin and JellySearch containers.
 
 #### Other
