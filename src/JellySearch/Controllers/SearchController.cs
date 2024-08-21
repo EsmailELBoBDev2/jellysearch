@@ -1,3 +1,4 @@
+using System.Text.Json;
 using JellySearch.Jellyfin;
 using JellySearch.Models;
 using JellySearch.Services;
@@ -13,6 +14,11 @@ public class SearchController : ControllerBase
     private ILogger Log { get; set; }
     private JellyfinProxyService Proxy { get; }
     private Meilisearch.Index Index { get; }
+
+    private JsonSerializerOptions DefaultJsonOptions = new()
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+    };
 
     public SearchController(ILoggerFactory logFactory, JellyfinProxyService proxy, Meilisearch.Index index)
     {
@@ -34,6 +40,7 @@ public class SearchController : ControllerBase
     [HttpGet("/Artists/AlbumArtists")]
     [HttpGet("/Artists")]
     [HttpGet("/Genres")]
+    [HttpGet("/Search/Hints")]
     public async Task<IActionResult> Search(
         [FromHeader(Name = "Authorization")] string? headerAuthorization,
         [FromHeader(Name = "X-Emby-Authorization")] string? legacyAuthorization,
@@ -85,9 +92,9 @@ public class SearchController : ControllerBase
             var response = await this.Proxy.ProxyRequest(authorization, legacyToken, this.Request.Path, this.Request.QueryString.ToString());
 
             if(response == null)
-                    return Content(JellyfinResponses.Empty, "application/json");
-                else
-                    return Content(response, "application/json");
+                return Content(JellyfinResponses.Empty, "application/json");
+            else
+                return Content(response, "application/json");
         }
         else
         {
@@ -201,12 +208,98 @@ public class SearchController : ControllerBase
 
                 query.Add("ids", string.Join(',', items.Select(x => x.Guid.Replace("-", ""))));
 
-                var response = await this.Proxy.ProxySearchRequest(authorization, legacyToken, userId, query);
+                if(path.EndsWith("/Search/Hints"))
+                {
+                    query.Add("fields", "PrimaryImageAspectRatio"); // Add more fields we need for search hints
+                }
 
-                if(response == null)
-                    return Content(JellyfinResponses.Empty, "application/json");
+                var responseStream = await this.Proxy.ProxySearchRequest(authorization, legacyToken, userId, query);
+
+                if(path.EndsWith("/Search/Hints"))
+                {
+                    // Handle search hints, expecting a root "SearchHints" array
+                    // Restructure the Jellyfin result in a way that clients expecting search hints can work
+
+                    if (responseStream == null)
+                        return Content(JellyfinResponses.EmptySearchHints, "application/json");
+                    else
+                    {
+                        // We need to deserialize in order to change the format for the search hint endpoint
+                        var deserialized = await JsonSerializer.DeserializeAsync<JellyfinItemResponse>(responseStream);
+
+                        if(deserialized.TotalRecordCount == 0)
+                            return Content(JellyfinResponses.EmptySearchHints, "application/json");
+
+                        foreach(var item in deserialized.Items)
+                        {
+                            // Modify items for search hints
+
+                            if(item.ImageTags != null & item.ImageTags.ContainsKey("Primary"))
+                            {
+                                item.PrimaryImageTag = item.ImageTags["Primary"];
+                                item.ImageTags = null;
+                            }
+
+                            // Try to get the parent back drop first and overwrite it if a item backdrop is available as well
+                            // BackdropImageTag sometimes does not get returned on the Items endpoint
+                            if(item.ParentBackdropImageTags != null && item.ParentBackdropImageTags.Count > 0)
+                            {
+                                item.BackdropImageTag = item.ParentBackdropImageTags[0];
+                                item.ParentBackdropImageTags = null;
+                            }
+                            if(item.BackdropImageTags != null && item.BackdropImageTags.Count > 0)
+                            {
+                                item.BackdropImageTag = item.BackdropImageTags[0];
+                                item.BackdropImageTags = null;
+                            }
+
+                            if(item.AlbumId != null)
+                            {
+                                item.BackdropImageItemId = item.AlbumId;
+                                //item.AlbumId = null;
+                            }
+                            else if(item.ParentBackdropItemId != null)
+                            {
+                                item.BackdropImageItemId = item.ParentBackdropItemId;
+                                item.ParentBackdropItemId = null;
+                            }
+                            else
+                            {
+                                item.BackdropImageItemId = item.Id;
+                            }
+
+                            if(item.SeriesName != null)
+                            {
+                                item.Series = item.SeriesName;
+                                item.SeriesName = null;
+                            }
+
+                            item.ItemId = item.Id; // ItemId is deprecated but still set
+                            item.IsFolder = null;
+                            item.BackdropImageTags = null;
+                        }
+
+                        var searchHintResponse = new JellyfinSearchHintResponse()
+                        {
+                            SearchHints = deserialized.Items,
+                            TotalRecordCount = deserialized.TotalRecordCount,
+                        };
+
+                        using Stream outputStream = new MemoryStream();
+                        await JsonSerializer.SerializeAsync(outputStream, searchHintResponse, this.DefaultJsonOptions);
+                        outputStream.Position = 0;
+
+                        return Content(await new StreamReader(outputStream).ReadToEndAsync(), "application/json");
+                    }
+                }
                 else
-                    return Content(response, "application/json");
+                {
+                    // Handle most Jellyfin routes expecting a root "Items" array
+                    if (responseStream == null)
+                        return Content(JellyfinResponses.Empty, "application/json");
+                    else
+                        return Content(await new StreamReader(responseStream).ReadToEndAsync(), "application/json");
+                }
             }
             else
             {

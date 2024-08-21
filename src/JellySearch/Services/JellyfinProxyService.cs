@@ -38,6 +38,7 @@ public class JellyfinProxyService : IHostedService, IDisposable
 
     }
 
+    /*
     public async Task<string?> ProxySearchRequest(string authorization, string? legacyToken, string? userId, Dictionary<string, StringValues> arguments)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, this.GetUrl(userId, HttpHelper.GetQueryString(arguments)));
@@ -51,6 +52,28 @@ public class JellyfinProxyService : IHostedService, IDisposable
 
         if(response.StatusCode == System.Net.HttpStatusCode.OK)
             return await response.Content.ReadAsStringAsync();
+        else
+        {
+            this.Log.LogError("Got error from Jellyfin: {error}", response.StatusCode);
+            this.Log.LogError("{error}", await response.Content.ReadAsStringAsync());
+            return null;
+        }
+    }
+    */
+
+    public async Task<Stream?> ProxySearchRequest(string authorization, string? legacyToken, string? userId, Dictionary<string, StringValues> arguments)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, this.GetUrl(userId, HttpHelper.GetQueryString(arguments)));
+
+        request.Headers.Add("Authorization", authorization);
+
+        if(legacyToken != null)
+            request.Headers.Add("X-Mediabrowser-Token", legacyToken);
+
+        var response = await this.Client.SendAsync(request);
+
+        if(response.StatusCode == System.Net.HttpStatusCode.OK)
+            return await response.Content.ReadAsStreamAsync();
         else
         {
             this.Log.LogError("Got error from Jellyfin: {error}", response.StatusCode);
