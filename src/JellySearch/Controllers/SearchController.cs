@@ -84,7 +84,7 @@ public class SearchController : ControllerBase
 
         // If not searching, proxy directly for reverse proxies that cannot filter by query parameter
         // Genres are currently not supported
-        if (searchTerm == null || path.EndsWith("/Genres"))
+        if (searchTerm == null || path.EndsWith("/Genres", true, System.Globalization.CultureInfo.InvariantCulture))
         {
             // If the search term is empty, we will proxy directly
             this.Log.LogInformation("Proxying non-search request");
@@ -128,23 +128,24 @@ public class SearchController : ControllerBase
 
             if(includeItemTypes.Count == 0)
             {
+                // Add types if no item types are provided
                 if (path != null)
                 {
                     // Handle direct endpoints and their types
-                    if (path.EndsWith("/Persons"))
+                    if (path.EndsWith("/Persons", true, System.Globalization.CultureInfo.InvariantCulture))
                     {
                         filteredTypes.Add("MediaBrowser.Controller.Entities.Person");
                     }
-                    else if (path.EndsWith("/Artists"))
+                    else if (path.EndsWith("/Artists", true, System.Globalization.CultureInfo.InvariantCulture))
                     {
                         filteredTypes.Add("MediaBrowser.Controller.Entities.Audio.MusicArtist");
                     }
-                    else if (path.EndsWith("/AlbumArtists"))
+                    else if (path.EndsWith("/AlbumArtists", true, System.Globalization.CultureInfo.InvariantCulture))
                     {
                         filteredTypes.Add("MediaBrowser.Controller.Entities.Audio.MusicArtist");
                         additionalFilters.Add("isFolder = 1"); // Album artists are marked as folder
                     }
-                    else if (path.EndsWith("/Genres"))
+                    else if (path.EndsWith("/Genres", true, System.Globalization.CultureInfo.InvariantCulture))
                     {
                         filteredTypes.Add("MediaBrowser.Controller.Entities.Genre"); // TODO: Handle genre search properly
                     }
@@ -208,14 +209,14 @@ public class SearchController : ControllerBase
 
                 query.Add("ids", string.Join(',', items.Select(x => x.Guid.Replace("-", ""))));
 
-                if(path.EndsWith("/Search/Hints"))
+                if(path.EndsWith("/Search/Hints", true, System.Globalization.CultureInfo.InvariantCulture))
                 {
                     query.Add("fields", "PrimaryImageAspectRatio"); // Add more fields we need for search hints
                 }
 
                 var responseStream = await this.Proxy.ProxySearchRequest(authorization, legacyToken, userId, query);
 
-                if(path.EndsWith("/Search/Hints"))
+                if(path.EndsWith("/Search/Hints", true, System.Globalization.CultureInfo.InvariantCulture))
                 {
                     // Handle search hints, expecting a root "SearchHints" array
                     // Restructure the Jellyfin result in a way that clients expecting search hints can work
