@@ -104,7 +104,8 @@ public class SearchController : ControllerBase
             var query = this.Request.Query.Where(x =>
                 !string.Equals(x.Key, "searchterm", StringComparison.InvariantCultureIgnoreCase) &&
                 !string.Equals(x.Key, "sortby", StringComparison.InvariantCultureIgnoreCase) &&
-                !string.Equals(x.Key, "sortorder", StringComparison.InvariantCultureIgnoreCase)
+                !string.Equals(x.Key, "sortorder", StringComparison.InvariantCultureIgnoreCase) &&
+                !string.Equals(x.Key, "limit", StringComparison.InvariantCultureIgnoreCase)
             ).ToDictionary(StringComparer.InvariantCultureIgnoreCase);
 
             var includeItemTypes = new List<string>();
