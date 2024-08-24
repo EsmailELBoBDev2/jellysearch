@@ -59,7 +59,7 @@ Besides JellySearch, you need a running MeiliSearch instance. If you use docker 
       - traefik.enable=true
       - traefik.http.services.jellysearch.loadbalancer.server.port=5000
 
-      - traefik.http.routers.jellysearch.rule=Host(`demo.jellyfin.org`) && !Path(`/Genres`) && (QueryRegexp(`searchTerm`, `(.*?)`) || QueryRegexp(`SearchTerm`, `(.*?)`))
+      - traefik.http.routers.jellysearch.rule=Host(`demo.jellyfin.org`) && (QueryRegexp(`searchTerm`, `(.*?)`) || QueryRegexp(`SearchTerm`, `(.*?)`))
   meilisearch:
     image: getmeili/meilisearch:v1.9
     restart: unless-stopped
@@ -90,20 +90,71 @@ You might have to set more environment variables if your container names differ:
 | MEILI_MASTER_KEY | The key used to authenticate with Meilisearch. | `null` | Yes |
 
 ### Setting up the reverse proxy
-The reverse proxy should be set up in a way which forwards every request that contains the query argument `searchTerm` (case-insensitive!) but not requests to `/Genres` to the JellySearch server.
-
-If your reverse proxy does not support matching query arguments, you can also forward any request. JellySearch will automatically pass non-search requests along to the Jellyfin server.
+The reverse proxy should be set up in a way which forwards every request that contains the query argument `searchTerm` (case-insensitive!). Search requests to `/Genres` are automatically forwarded to Jellyfin, they are currently not supported.
 
 #### Traefik
 In Traefik you can simply add a new rule to the JellySearch container:
 
 ```
-  - traefik.http.routers.jellysearch.rule=Host(`demo.jellyfin.org`) && !Path(`/Genres`) && (QueryRegexp(`searchTerm`, `(.*?)`) || QueryRegexp(`SearchTerm`, `(.*?)`))
+  - traefik.http.routers.jellysearch.rule=Host(`demo.jellyfin.org`) && (QueryRegexp(`searchTerm`, `(.*?)`) || QueryRegexp(`SearchTerm`, `(.*?)`))
 ```
 
 **Traefik 3.0 or higher is required since support for `QueryRegexp` is missing in Traefik 2.0.**
 
 Make sure `demo.jellyfin.org` is your Jellyfin host and is identical between your Jellyfin and JellySearch containers.
 
+#### nginx
+
+When using the default nginx Jellyfin config (https://jellyfin.org/docs/general/networking/nginx/), add the following block on the top inside of your Jellyfin `location /` nginx config block:
+
+```
+    if ($arg_searchTerm) {
+        proxy_pass http://jellysearch:5000;
+        break;
+    }
+```
+
+It should look like this:
+
+```
+...
+
+    location / {
+        # Proxy JellySearch
+        if ($arg_searchTerm) {
+            proxy_pass http://jellysearch:5000;
+            break;
+        }
+
+        # Proxy main Jellyfin traffic
+        proxy_pass http://$jellyfin:8096;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Protocol $scheme;
+        proxy_set_header X-Forwarded-Host $http_host;
+
+        # Disable buffering when the nginx proxy gets very resource heavy upon streaming
+        proxy_buffering off;
+    }
+
+...
+```
+
+#### Nginx Proxy Manager
+
+On NPM edit the Jellyfin proxy host and add a new custom location on `/`, set the forward hostname/IP and scheme/port to where your Jellyfin instance is running. After that click on the cog and paste the following extra rule:
+
+```
+if ($arg_searchTerm) {
+    proxy_pass http://jellysearch:5000;
+    break;
+}
+
+```
+
+<img src="img/npm_config.png" height="400" />
+
 #### Other
-In principle any reverse proxy which can redirect certain paths to a different backend should work. Currently only Traefik was tested.
+In principle any reverse proxy which can redirect certain paths and/or query parameters to a different backend should work.
