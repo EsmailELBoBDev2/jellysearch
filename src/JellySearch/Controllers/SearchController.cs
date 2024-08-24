@@ -87,7 +87,7 @@ public class SearchController : ControllerBase
         if (searchTerm == null || path.EndsWith("/Genres"))
         {
             // If the search term is empty, we will proxy directly
-            this.Log.LogWarning("Proxying non-search request, make sure to configure your reverse proxy correctly");
+            this.Log.LogInformation("Proxying non-search request");
 
             var response = await this.Proxy.ProxyRequest(authorization, legacyToken, this.Request.Path, this.Request.QueryString.ToString());
 
