@@ -4,6 +4,7 @@ using JellySearch.Models;
 using JellySearch.Services;
 using Meilisearch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 
 namespace JellySearch.Controllers;
 
@@ -109,19 +110,46 @@ public class SearchController : ControllerBase
                 !string.Equals(x.Key, "limit", StringComparison.InvariantCultureIgnoreCase)
             ).ToDictionary(StringComparer.InvariantCultureIgnoreCase);
 
+            // The default limit for search results as to not request too many IDs from Jellyfin
+            // The default limit can't be exceeded but it can be reduced
+            var limit = 20;
+
+            // Override the limit if it is less than the value defined above
+            if(this.Request.Query.TryGetValue("Limit", out StringValues requestedLimit))
+            {
+                if (requestedLimit.Count == 1)
+                {
+                    if (int.TryParse(requestedLimit, out int parsed))
+                    {
+                        if (parsed < limit)
+                        {
+                            limit = parsed;
+                        }
+                    }
+                    else
+                    {
+                        this.Log.LogWarning("Received invalid limit!");
+                    }
+                }
+                else
+                {
+                    this.Log.LogWarning("Got more than one limit argument, ignoring");
+                }
+            }
+
             var includeItemTypes = new List<string>();
 
-            if(query.ContainsKey("IncludeItemTypes"))
+            if(query.TryGetValue("IncludeItemTypes", out StringValues includedTypes))
             {
-                if(query["IncludeItemTypes"].Count == 1)
+                if(includedTypes.Count == 1)
                 {
                     // If item count is 1, split by , and add all elements
-                    includeItemTypes.AddRange(query["IncludeItemTypes"][0].Split(','));
+                    includeItemTypes.AddRange(includedTypes[0].Split(','));
                 }
                 else
                 {
                     // If item count is more than 1, add all elements directly
-                    includeItemTypes.AddRange(query["IncludeItemTypes"]);
+                    includeItemTypes.AddRange(includedTypes);
                 }
             }
 
@@ -188,7 +216,7 @@ public class SearchController : ControllerBase
                     var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
                     {
                         Filter = filter,
-                        Limit = 15,
+                        Limit = limit,
                     });
 
                     items.AddRange(results.Hits);
@@ -199,7 +227,7 @@ public class SearchController : ControllerBase
                 // Search without filtering the type
                 var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
                 {
-                    Limit = 20,
+                    Limit = limit,
                 });
 
                 items.AddRange(results.Hits);
