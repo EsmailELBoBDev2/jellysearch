@@ -65,10 +65,10 @@ public class JellyfinProxyService : IHostedService, IDisposable
     {
         var request = new HttpRequestMessage(HttpMethod.Get, this.GetUrl(userId, HttpHelper.GetQueryString(arguments)));
 
-        request.Headers.Add("Authorization", authorization);
+        request.Headers.TryAddWithoutValidation("Authorization", authorization);
 
         if(legacyToken != null)
-            request.Headers.Add("X-Mediabrowser-Token", legacyToken);
+            request.Headers.TryAddWithoutValidation("X-Mediabrowser-Token", legacyToken);
 
         var response = await this.Client.SendAsync(request);
 
@@ -86,10 +86,10 @@ public class JellyfinProxyService : IHostedService, IDisposable
     {
         var request = new HttpRequestMessage(HttpMethod.Get, string.Format("{0}{1}{2}", this.JellyfinUrl, path, query));
 
-        request.Headers.Add("Authorization", authorization);
+        request.Headers.TryAddWithoutValidation("Authorization", authorization);
 
         if(legacyToken != null)
-            request.Headers.Add("X-Mediabrowser-Token", legacyToken);
+            request.Headers.TryAddWithoutValidation("X-Mediabrowser-Token", legacyToken);
 
         var response = await this.Client.SendAsync(request);
 
