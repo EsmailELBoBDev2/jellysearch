@@ -66,27 +66,41 @@ public class IndexJob : IJob
 
             while (await reader.ReadAsync())
             {
-                var item = new Item()
+                try
                 {
-                    Guid = reader.GetGuid(0).ToString(),
-                    Type = !reader.IsDBNull(1) ? reader.GetString(1) : null,
-                    ParentId = !reader.IsDBNull(2) ? reader.GetString(2) : null,
-                    CommunityRating = !reader.IsDBNull(3) ? reader.GetInt16(3) : null,
-                    Name = !reader.IsDBNull(4) ? reader.GetString(4) : null,
-                    Overview = !reader.IsDBNull(5) ? reader.GetString(5) : null,
-                    ProductionYear = !reader.IsDBNull(6) ? reader.GetInt32(6) : null,
-                    Genres = !reader.IsDBNull(7) ? reader.GetString(7).Split('|') : null,
-                    Studios = !reader.IsDBNull(8) ? reader.GetString(8).Split('|') : null,
-                    Tags = !reader.IsDBNull(9) ? reader.GetString(9).Split('|') : null,
-                    IsFolder = !reader.IsDBNull(10) ? reader.GetInt16(10) : null,
-                    CriticRating = !reader.IsDBNull(11) ? reader.GetInt16(11) : null,
-                    OriginalTitle = !reader.IsDBNull(12) ? reader.GetString(12) : null,
-                    SeriesName = !reader.IsDBNull(13) ? reader.GetString(13) : null,
-                    Artists = !reader.IsDBNull(14) ? reader.GetString(14).Split('|') : null,
-                    AlbumArtists = !reader.IsDBNull(15) ? reader.GetString(15).Split('|') : null,
-                };
+                    var item = new Item()
+                    {
+                        Guid = reader.GetGuid(0).ToString(),
+                        Type = !reader.IsDBNull(1) ? reader.GetString(1) : null,
+                        ParentId = !reader.IsDBNull(2) ? reader.GetString(2) : null,
+                        CommunityRating = !reader.IsDBNull(3) ? reader.GetInt16(3) : null,
+                        Name = !reader.IsDBNull(4) ? reader.GetString(4) : null,
+                        Overview = !reader.IsDBNull(5) ? reader.GetString(5) : null,
+                        ProductionYear = !reader.IsDBNull(6) ? reader.GetInt32(6) : null,
+                        Genres = !reader.IsDBNull(7) ? reader.GetString(7).Split('|') : null,
+                        Studios = !reader.IsDBNull(8) ? reader.GetString(8).Split('|') : null,
+                        Tags = !reader.IsDBNull(9) ? reader.GetString(9).Split('|') : null,
+                        IsFolder = !reader.IsDBNull(10) ? reader.GetInt16(10) : null,
+                        CriticRating = !reader.IsDBNull(11) ? reader.GetInt16(11) : null,
+                        OriginalTitle = !reader.IsDBNull(12) ? reader.GetString(12) : null,
+                        SeriesName = !reader.IsDBNull(13) ? reader.GetString(13) : null,
+                        Artists = !reader.IsDBNull(14) ? reader.GetString(14).Split('|') : null,
+                        AlbumArtists = !reader.IsDBNull(15) ? reader.GetString(15).Split('|') : null,
+                    };
 
-                items.Add(item);
+                    items.Add(item);
+                }
+                catch(Exception e)
+                {
+                    this.Log.LogError("Could not add an item to the index, ignoring item");
+
+                    this.Log.LogError("Item index: " + (items.Count - 1));
+                    if(!reader.IsDBNull(4))
+                        this.Log.LogError("Item name: " + reader.GetString(4));
+
+                    this.Log.LogDebug(e.Message);
+                    this.Log.LogDebug(e.StackTrace);
+                }
             }
 
             if (items.Count > 0)
