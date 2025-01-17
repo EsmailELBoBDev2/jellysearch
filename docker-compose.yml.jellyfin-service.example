@@ -1,0 +1,24 @@
+services:
+  jellysearch:
+    image: domistyle/jellysearch
+    user: <jellyfin user>
+    restart: unless-stopped
+    volumes:
+      - /var/lib/jellyfin:/config:ro
+    environment:
+      MEILI_MASTER_KEY: "1234"
+      INDEX_CRON: "0 0 0/2 ? * * *"
+      JELLYFIN_URL: "http://<jellyfin>:8096"
+    depends_on:
+      - meilisearch
+	ports:
+	  - 5000:5000
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.9
+    user: <jellyfin user>
+    restart: unless-stopped
+    volumes:
+      - meilisearch:/meili_data
+    environment:
+      MEILI_MASTER_KEY: "1234"
