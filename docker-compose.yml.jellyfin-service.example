@@ -11,8 +11,8 @@ services:
       JELLYFIN_URL: "http://<jellyfin>:8096"
     depends_on:
       - meilisearch
-	ports:
-	  - 5000:5000
+    ports:
+      - 5000:5000
 
   meilisearch:
     image: getmeili/meilisearch:v1.9
