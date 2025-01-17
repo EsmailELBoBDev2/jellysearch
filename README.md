@@ -89,6 +89,43 @@ You might have to set more environment variables if your container names differ:
 | MEILI_URL | The URL where your Meilisearch instance is reachable. | `http://meilisearch:7700` | Yes |
 | MEILI_MASTER_KEY | The key used to authenticate with Meilisearch. | `null` | Yes |
 
+
+### Setting up JellySearch with Jellyfin outside of Docker
+The below example is based on jellyfin running as a service on linux with jellysearch and meilisearch inside docker containers using nginx proxy manager. Config options are the same as above unless otherwise stated.
+
+```
+services:
+  jellysearch:
+    image: domistyle/jellysearch
+    user: <jellyfin user>
+    restart: unless-stopped
+    volumes:
+      - /var/lib/jellyfin:/config:ro
+    environment:
+      MEILI_MASTER_KEY: "1234"
+      INDEX_CRON: "0 0 0/2 ? * * *"
+      JELLYFIN_URL: "http://<jellyfin>:8096"
+    depends_on:
+      - meilisearch
+    ports:
+      - 5000:5000
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.9
+    user: <jellyfin user>
+    restart: unless-stopped
+    volumes:
+      - meilisearch:/meili_data
+    environment:
+      MEILI_MASTER_KEY: "1234"
+```
+* `user` Set this to the same user and group that jellyfin is running. This is necessary for jellysearch to access jellyfin's database.
+* `/config` Set this to jellyfin's data directory. In this example, it's /var/lib/jellyfin but it may vary. See https://jellyfin.org/docs/general/administration/configuration/
+  * Note that you may have a few seperate directories containing different parts of jellyfin's configuration (for example, /etc/jellyfin and /var/lib/jellyfin may both exist). Use the one that contains a sub-directory with .db files.
+* `JELLYFIN_URL` Ensure this is set to whatever url you use to access jellyfin locally.
+* `PORTS` If your proxy isn't in the same stack as jellysearch, you'll need to expose the ports (for example, if you're running nginx as a service).
+
+
 ### Setting up the reverse proxy
 The reverse proxy should be set up in a way which forwards every request that contains the query argument `searchTerm` (case-insensitive!). Search requests to `/Genres` are automatically forwarded to Jellyfin, they are currently not supported.
 
@@ -101,7 +138,7 @@ In Traefik you can simply add a new rule to the JellySearch container:
 
 **Traefik 3.0 or higher is required since support for `QueryRegexp` is missing in Traefik 2.0.**
 
-Make sure `demo.jellyfin.org` is your Jellyfin host and is identical between your Jellyfin and JellySearch containers.
+Make sure `demo.jellyfin.org` is your Jellyfin host and is identical between your Jellyfin and JellySearch containers. If you are not running jellyfin in a container, this is the same as the `JELLYFIN_URL` in your compose file.
 
 #### nginx
 
@@ -141,6 +178,7 @@ It should look like this:
 
 ...
 ```
+If you are running nginx outside of the same stack as jellysearch, you'll need to replace `http://jellysearch:5000` with `http://localhost:5000`.
 
 #### Nginx Proxy Manager
 
@@ -151,8 +189,8 @@ if ($arg_searchTerm) {
     proxy_pass http://jellysearch:5000;
     break;
 }
-
 ```
+If you are running nginx outside of the same stack as jellysearch, you'll need to replace `http://jellysearch:5000` with `http://localhost:5000`. Additionally, ensure your `Forward Hostname/IP` in the screenshot below matches what's in the details tab of your jellyfin proxy host.
 
 <img src="img/npm_config.png" height="400" />
 
