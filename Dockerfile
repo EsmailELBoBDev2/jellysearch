@@ -10,5 +10,7 @@ RUN chown 1000:100 /app -R
 
 USER 1000:100
 
+EXPOSE 5000
+
 WORKDIR /app
 ENTRYPOINT ["dotnet", "jellysearch.dll"]
