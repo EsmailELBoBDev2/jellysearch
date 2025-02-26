@@ -46,6 +46,24 @@ public class IndexJob : IJob
                 new string[] { "words", "typo", "proximity", "attribute", "sort", "exactness", "communityRating:desc", "criticRating:desc" }
             );
 
+            var legacy = true;
+            var databasePath = "/data/library.db";
+
+            // If the old database does not exist, use the new one
+            if (!File.Exists(Path.Join(this.JellyfinConfigDir + databasePath)))
+            {
+                this.Log.LogInformation("No library.db available, trying jellyfin.db");
+
+                legacy = false;
+                databasePath = "/data/jellyfin.db";
+            }
+
+            // If the new database doesn't exist either, abort
+            if (!File.Exists(Path.Join(this.JellyfinConfigDir + databasePath)))
+            {
+                throw new FileNotFoundException("Could not find either library.db or jellyfin.db in config folder.");
+            }
+
             // Open Jellyfin library
             var connectionString = new SqliteConnectionStringBuilder
             {
@@ -58,7 +76,12 @@ public class IndexJob : IJob
 
             // Query all base items
             using var command = connection.CreateCommand();
-            command.CommandText = "SELECT guid, type, ParentId, CommunityRating, Name, Overview, ProductionYear, Genres, Studios, Tags, IsFolder, CriticRating, OriginalTitle, SeriesName, Artists, AlbumArtists FROM TypedBaseItems";
+
+            // Adjust query if querying a legacy database
+            if(legacy)
+                command.CommandText = "SELECT guid, type, ParentId, CommunityRating, Name, Overview, ProductionYear, Genres, Studios, Tags, IsFolder, CriticRating, OriginalTitle, SeriesName, Artists, AlbumArtists FROM TypedBaseItems";
+            else
+                command.CommandText = "SELECT id, Type, ParentId, CommunityRating, Name, Overview, ProductionYear, Genres, Studios, Tags, IsFolder, CriticRating, OriginalTitle, SeriesName, Artists, AlbumArtists FROM BaseItems";
 
             using var reader = await command.ExecuteReaderAsync();
 
