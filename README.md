@@ -160,5 +160,26 @@ if ($arg_searchTerm) {
 
 <img src="img/npm_config.png" height="400" />
 
+#### Caddy
+
+If using Caddy as a reverse proxy, we should use matching handles to redirect to JellySearch (case-insensitive), and a catch-all handle which redirects to Jellyfin:
+
+```Caddyfile
+my.custom.domain {
+    @search_lc query searchTerm=*
+    @search_uc query SearchTerm=*
+
+    handle @search_lc {
+        reverse_proxy http://jellysearch:5000
+    }
+    handle @search_uc {
+        reverse_proxy http://jellysearch:5000
+    }
+    handle {
+        reverse_proxy http://jellyfin:8096
+    }
+}
+```
+
 #### Other
 In principle any reverse proxy which can redirect certain paths and/or query parameters to a different backend should work.
