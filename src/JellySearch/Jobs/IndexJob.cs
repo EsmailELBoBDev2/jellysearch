@@ -23,7 +23,7 @@ public class IndexJob : IJob
 
             // Set filterable attributes
             await index.UpdateFilterableAttributesAsync(
-                new string[] { "type", "parentId", "isFolder" }
+                new string[] { "type", "parentId", "topParentId", "isFolder" }
             );
 
             // Set sortable attributes
@@ -79,9 +79,9 @@ public class IndexJob : IJob
 
             // Adjust query if querying a legacy database
             if(legacy)
-                command.CommandText = "SELECT guid, type, ParentId, CommunityRating, Name, Overview, ProductionYear, Genres, Studios, Tags, IsFolder, CriticRating, OriginalTitle, SeriesName, Artists, AlbumArtists FROM TypedBaseItems";
+                command.CommandText = "SELECT guid, type, ParentId, CommunityRating, Name, Overview, ProductionYear, Genres, Studios, Tags, IsFolder, CriticRating, OriginalTitle, SeriesName, Artists, AlbumArtists, TopParentId FROM TypedBaseItems";
             else
-                command.CommandText = "SELECT id, Type, ParentId, CommunityRating, Name, Overview, ProductionYear, Genres, Studios, Tags, IsFolder, CriticRating, OriginalTitle, SeriesName, Artists, AlbumArtists FROM BaseItems";
+                command.CommandText = "SELECT id, Type, ParentId, CommunityRating, Name, Overview, ProductionYear, Genres, Studios, Tags, IsFolder, CriticRating, OriginalTitle, SeriesName, Artists, AlbumArtists, TopParentId FROM BaseItems";
 
             using var reader = await command.ExecuteReaderAsync();
 
@@ -109,6 +109,7 @@ public class IndexJob : IJob
                         SeriesName = !reader.IsDBNull(13) ? reader.GetString(13) : null,
                         Artists = !reader.IsDBNull(14) ? reader.GetString(14).Split('|') : null,
                         AlbumArtists = !reader.IsDBNull(15) ? reader.GetString(15).Split('|') : null,
+                        TopParentId = !reader.IsDBNull(16) ? reader.GetString(16) : null,
                     };
 
                     items.Add(item);

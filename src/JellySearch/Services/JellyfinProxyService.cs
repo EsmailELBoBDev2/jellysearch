@@ -1,7 +1,23 @@
 using JellySearch.Helpers;
 using Microsoft.Extensions.Primitives;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace JellySearch.Services;
+
+/// <summary>
+/// Response from Jellyfin's /Users/{userId}/Views endpoint
+/// </summary>
+public class JellyfinViewsResponse
+{
+    public List<JellyfinViewItem> Items { get; set; } = new();
+}
+
+public class JellyfinViewItem
+{
+    public string? Id { get; set; }
+    public string? Name { get; set; }
+}
 
 public class JellyfinProxyService : IHostedService, IDisposable
 {
@@ -13,6 +29,7 @@ public class JellyfinProxyService : IHostedService, IDisposable
 
     private string JellyfinSearchUrl { get; } = "{0}/Users/{1}/Items{2}";
     private string JellyfinAltSearchUrl { get; } = "{0}/Items{1}";
+    private string JellyfinViewsUrl { get; } = "{0}/Users/{1}/Views";
 
     public JellyfinProxyService(ILoggerFactory logFactory)
     {
@@ -27,6 +44,52 @@ public class JellyfinProxyService : IHostedService, IDisposable
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         this.Dispose();
+    }
+
+    /// <summary>
+    /// Get the library IDs the user has access to
+    /// </summary>
+    public async Task<List<string>?> GetUserLibraryIds(string authorization, string? legacyToken, string userId)
+    {
+        var url = string.Format(this.JellyfinViewsUrl, this.JellyfinUrl, userId);
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+        request.Headers.TryAddWithoutValidation("Authorization", authorization);
+
+        if (legacyToken != null)
+            request.Headers.TryAddWithoutValidation("X-Mediabrowser-Token", legacyToken);
+
+        try
+        {
+            var response = await this.Client.SendAsync(request);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                var content = await response.Content.ReadAsStreamAsync();
+                var viewsResponse = await JsonSerializer.DeserializeAsync<JellyfinViewsResponse>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (viewsResponse?.Items != null)
+                {
+                    return viewsResponse.Items
+                        .Where(x => x.Id != null)
+                        .Select(x => x.Id!)
+                        .ToList();
+                }
+            }
+            else
+            {
+                this.Log.LogError("Failed to get user views: {error}", response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            this.Log.LogError("Error fetching user libraries: {error}", ex.Message);
+        }
+
+        return null;
     }
 
     private string GetUrl(string? userId, string query)

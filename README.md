@@ -2,9 +2,6 @@
 
 # JellySearch
 
-> [!CAUTION]
-> The search may return results from libraries that the user is not authorised to view. Search results are not checked for user permissions. see https://gitlab.com/DomiStyle/jellysearch/-/issues/16
-
 A fast full-text search proxy for Jellyfin. Integrates seamlessly with most Jellyfin clients.
 
 ## How does it work?

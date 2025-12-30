@@ -156,6 +156,24 @@ public class SearchController : ControllerBase
             var filteredTypes = new List<string>();
             var additionalFilters = new List<string>();
 
+            // Fetch user's accessible library IDs for permission filtering
+            List<string>? userLibraryIds = null;
+            if (userId != null)
+            {
+                userLibraryIds = await this.Proxy.GetUserLibraryIds(authorization, legacyToken, userId);
+                if (userLibraryIds != null && userLibraryIds.Count > 0)
+                {
+                    // Add filter to only include items from user's accessible libraries
+                    var libraryFilter = "topParentId IN [" + string.Join(", ", userLibraryIds.Select(id => "\"" + id + "\"")) + "]";
+                    additionalFilters.Add(libraryFilter);
+                    this.Log.LogDebug("Filtering by user libraries: {filter}", libraryFilter);
+                }
+                else
+                {
+                    this.Log.LogWarning("Could not fetch user libraries for user {userId}, search results may include unauthorized items", userId);
+                }
+            }
+
             if(includeItemTypes.Count == 0)
             {
                 // Add types if no item types are provided
@@ -224,9 +242,16 @@ public class SearchController : ControllerBase
             }
             else
             {
-                // Search without filtering the type
+                // Search without filtering the type, but still apply library filter if available
+                string? filter = null;
+                if (additionalFilters.Count > 0)
+                {
+                    filter = string.Join(" AND ", additionalFilters);
+                }
+
                 var results = await this.Index.SearchAsync<Item>(searchTerm, new SearchQuery()
                 {
+                    Filter = filter,
                     Limit = limit,
                 });
 
