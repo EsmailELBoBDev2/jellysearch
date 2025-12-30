@@ -169,7 +169,7 @@ public class IndexJob : IJob
                 {
                     if (item.TopParentId != null && topParentIdToName.TryGetValue(item.TopParentId.ToUpperInvariant(), out var libraryName))
                     {
-                        item.TopParentId = libraryName; // Store name instead of ID
+                        item.TopParentId = libraryName.ToLowerInvariant(); // Store lowercase name for matching
                     }
                 }
 

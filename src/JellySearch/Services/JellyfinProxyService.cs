@@ -138,10 +138,12 @@ public class JellyfinProxyService : IHostedService, IDisposable
             }
 
             // Return library NAMES instead of IDs - this matches the TopParentId field which now stores library names
+            // Normalize to lowercase for case-insensitive matching
             if (userViewNames.Count > 0)
             {
-                this.Log.LogInformation("User {userId} accessible libraries: {names}", userId, string.Join(", ", userViewNames));
-                return userViewNames.ToList();
+                var normalizedNames = userViewNames.Select(n => n.ToLowerInvariant()).ToList();
+                this.Log.LogInformation("User {userId} accessible libraries (normalized): {names}", userId, string.Join(", ", normalizedNames));
+                return normalizedNames;
             }
         }
         catch (Exception ex)
