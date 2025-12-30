@@ -17,6 +17,7 @@ public class JellyfinViewItem
     public string? Id { get; set; }
     public string? Name { get; set; }
     public string? CollectionType { get; set; }
+    public string? ParentId { get; set; }
 }
 
 public class JellyfinProxyService : IHostedService, IDisposable
@@ -56,7 +57,8 @@ public class JellyfinProxyService : IHostedService, IDisposable
     }
 
     /// <summary>
-    /// Get the library IDs the user has access to from Jellyfin's Views endpoint
+    /// Get the library IDs the user has access to from Jellyfin's Views endpoint.
+    /// Returns both the View IDs and their ParentIds since either could match TopParentId in the database.
     /// </summary>
     public async Task<List<string>?> GetUserLibraryIds(string authorization, string? legacyToken, string userId)
     {
@@ -82,10 +84,18 @@ public class JellyfinProxyService : IHostedService, IDisposable
 
                 if (viewsResponse?.Items != null)
                 {
-                    return viewsResponse.Items
-                        .Where(x => x.Id != null)
-                        .Select(x => x.Id!)
-                        .ToList();
+                    // Collect both View IDs and their ParentIds since either could match TopParentId
+                    var libraryIds = new HashSet<string>();
+                    foreach (var view in viewsResponse.Items)
+                    {
+                        if (view.Id != null)
+                            libraryIds.Add(view.Id);
+                        if (view.ParentId != null)
+                            libraryIds.Add(view.ParentId);
+                    }
+                    
+                    this.Log.LogDebug("User {userId} accessible library IDs: {ids}", userId, string.Join(", ", libraryIds));
+                    return libraryIds.ToList();
                 }
             }
             else
