@@ -127,6 +127,8 @@ public class IndexJob : IJob
                 }
             }
 
+            if (items.Count > 0)
+            {
                 // Normalize TopParentId to 32-character hex string (no dashes) for consistent matching
                 foreach (var item in items)
                 {
