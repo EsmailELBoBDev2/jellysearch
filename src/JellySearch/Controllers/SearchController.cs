@@ -156,14 +156,17 @@ public class SearchController : ControllerBase
             var filteredTypes = new List<string>();
             var additionalFilters = new List<string>();
 
-            // Fetch user's accessible library IDs for post-response permission filtering
+            // Fetch user's accessible library IDs for Meilisearch permission filtering
             List<string>? userLibraryIds = null;
             if (userId != null)
             {
                 userLibraryIds = await this.Proxy.GetUserLibraryIds(authorization, legacyToken, userId);
                 if (userLibraryIds != null && userLibraryIds.Count > 0)
                 {
-                    this.Log.LogDebug("User {userId} has access to {count} libraries", userId, userLibraryIds.Count);
+                    // Add filter to only include items from user's accessible libraries
+                    var libraryFilter = "topParentId IN [" + string.Join(", ", userLibraryIds.Select(id => "\"" + id + "\"")) + "]";
+                    additionalFilters.Add(libraryFilter);
+                    this.Log.LogDebug("User {userId} library filter applied with {count} IDs", userId, userLibraryIds.Count);
                 }
             }
 

@@ -139,8 +139,27 @@ public class JellyfinProxyService : IHostedService, IDisposable
 
             if (allIds.Count > 0)
             {
-                this.Log.LogDebug("User {userId} accessible library IDs: {ids}", userId, string.Join(", ", allIds));
-                return allIds.ToList();
+                // Normalize IDs - add both with and without dashes since formats may differ
+                var normalizedIds = new HashSet<string>();
+                foreach (var id in allIds)
+                {
+                    normalizedIds.Add(id);
+                    // Add version without dashes
+                    normalizedIds.Add(id.Replace("-", ""));
+                    // Try to add version with dashes if it looks like a GUID without dashes
+                    if (id.Length == 32 && !id.Contains("-"))
+                    {
+                        try
+                        {
+                            var guid = Guid.Parse(id);
+                            normalizedIds.Add(guid.ToString());
+                        }
+                        catch { }
+                    }
+                }
+                
+                this.Log.LogInformation("User {userId} accessible library IDs (normalized): {ids}", userId, string.Join(", ", normalizedIds.Take(20)));
+                return normalizedIds.ToList();
             }
         }
         catch (Exception ex)
