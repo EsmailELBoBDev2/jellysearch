@@ -21,7 +21,7 @@ public class IndexJob : IJob
         {
             this.Log.LogInformation("Indexing items...");
 
-            // Set filterable attributes
+            // Set filterable attributes (topParentId is used for library permission filtering)
             await index.UpdateFilterableAttributesAsync(
                 new string[] { "type", "parentId", "topParentId", "isFolder" }
             );

@@ -1,7 +1,6 @@
 using JellySearch.Helpers;
 using Microsoft.Extensions.Primitives;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace JellySearch.Services;
 
@@ -17,6 +16,7 @@ public class JellyfinViewItem
 {
     public string? Id { get; set; }
     public string? Name { get; set; }
+    public string? CollectionType { get; set; }
 }
 
 public class JellyfinProxyService : IHostedService, IDisposable
@@ -46,8 +46,17 @@ public class JellyfinProxyService : IHostedService, IDisposable
         this.Dispose();
     }
 
+    private string GetUrl(string? userId, string query)
+    {
+        if(userId == null)
+            return string.Format(this.JellyfinAltSearchUrl, this.JellyfinUrl, query); // Search without user ID (e.g. genres)
+        else
+            return string.Format(this.JellyfinSearchUrl, this.JellyfinUrl, userId, query);
+
+    }
+
     /// <summary>
-    /// Get the library IDs the user has access to
+    /// Get the library IDs the user has access to from Jellyfin's Views endpoint
     /// </summary>
     public async Task<List<string>?> GetUserLibraryIds(string authorization, string? legacyToken, string userId)
     {
@@ -90,15 +99,6 @@ public class JellyfinProxyService : IHostedService, IDisposable
         }
 
         return null;
-    }
-
-    private string GetUrl(string? userId, string query)
-    {
-        if(userId == null)
-            return string.Format(this.JellyfinAltSearchUrl, this.JellyfinUrl, query); // Search without user ID (e.g. genres)
-        else
-            return string.Format(this.JellyfinSearchUrl, this.JellyfinUrl, userId, query);
-
     }
 
     /*

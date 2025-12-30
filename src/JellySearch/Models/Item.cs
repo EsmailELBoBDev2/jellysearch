@@ -5,7 +5,6 @@ public class Item
     public string? Guid { get; set; }
     public string? Type { get; set; }
     public string? ParentId { get; set; }
-    public string? TopParentId { get; set; }
 
     public short? CommunityRating { get; set; }
 
@@ -27,4 +26,7 @@ public class Item
 
     public string[]? Artists { get; set; }
     public string[]? AlbumArtists { get; set; }
+
+    // TopParentId stores the root library folder ID for permission filtering
+    public string? TopParentId { get; set; }
 }

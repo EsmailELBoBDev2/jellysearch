@@ -157,16 +157,13 @@ public class SearchController : ControllerBase
             var additionalFilters = new List<string>();
 
             // Fetch user's accessible library IDs for permission filtering
-            // NOTE: Temporarily disabled - Views endpoint returns different IDs than TopParentId in the database
-            // TODO: Need to find the correct mapping between library Views and TopParentId
-            List<string>? userLibraryIds = null;
-            /*
             if (userId != null)
             {
-                userLibraryIds = await this.Proxy.GetUserLibraryIds(authorization, legacyToken, userId);
+                var userLibraryIds = await this.Proxy.GetUserLibraryIds(authorization, legacyToken, userId);
                 if (userLibraryIds != null && userLibraryIds.Count > 0)
                 {
                     // Add filter to only include items from user's accessible libraries
+                    // TopParentId in the database stores the root library folder ID
                     var libraryFilter = "topParentId IN [" + string.Join(", ", userLibraryIds.Select(id => "\"" + id + "\"")) + "]";
                     additionalFilters.Add(libraryFilter);
                     this.Log.LogDebug("Filtering by user libraries: {filter}", libraryFilter);
@@ -176,7 +173,6 @@ public class SearchController : ControllerBase
                     this.Log.LogWarning("Could not fetch user libraries for user {userId}, search results may include unauthorized items", userId);
                 }
             }
-            */
 
             if(includeItemTypes.Count == 0)
             {
