@@ -129,6 +129,15 @@ public class IndexJob : IJob
 
             if (items.Count > 0)
             {
+                // Log unique TopParentIds to understand the format
+                var uniqueTopParents = items
+                    .Where(x => x.TopParentId != null)
+                    .Select(x => x.TopParentId!)
+                    .Distinct()
+                    .Take(20)
+                    .ToList();
+                this.Log.LogInformation("Sample TopParentIds from database: {ids}", string.Join(", ", uniqueTopParents));
+
                 // Add items to search index in batches
                 await index.AddDocumentsInBatchesAsync<Item>(items, 5000, "guid");
             }
