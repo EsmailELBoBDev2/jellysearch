@@ -156,22 +156,14 @@ public class SearchController : ControllerBase
             var filteredTypes = new List<string>();
             var additionalFilters = new List<string>();
 
-            // Fetch user's accessible library IDs for permission filtering
+            // Fetch user's accessible library IDs for post-response permission filtering
+            List<string>? userLibraryIds = null;
             if (userId != null)
             {
-                var userLibraryIds = await this.Proxy.GetUserLibraryIds(authorization, legacyToken, userId);
+                userLibraryIds = await this.Proxy.GetUserLibraryIds(authorization, legacyToken, userId);
                 if (userLibraryIds != null && userLibraryIds.Count > 0)
                 {
-                    // Add filter to only include items from user's accessible libraries
-                    // TopParentId in the database stores the root library folder ID
-                    var libraryFilter = "topParentId IN [" + string.Join(", ", userLibraryIds.Select(id => "\"" + id + "\"")) + "]";
-                    additionalFilters.Add(libraryFilter);
-                    this.Log.LogInformation("Library filter enabled. User {userId} has access to libraries: {libraries}", userId, string.Join(", ", userLibraryIds));
-                    this.Log.LogDebug("Meilisearch filter: {filter}", libraryFilter);
-                }
-                else
-                {
-                    this.Log.LogWarning("Could not fetch user libraries for user {userId}, search results may include unauthorized items", userId);
+                    this.Log.LogDebug("User {userId} has access to {count} libraries", userId, userLibraryIds.Count);
                 }
             }
 
@@ -284,6 +276,22 @@ public class SearchController : ControllerBase
                         // We need to deserialize in order to change the format for the search hint endpoint
                         var deserialized = await JsonSerializer.DeserializeAsync<JellyfinItemResponse>(responseStream);
 
+                        // Filter items by user's accessible libraries
+                        if (userLibraryIds != null && userLibraryIds.Count > 0 && deserialized?.Items != null)
+                        {
+                            var libraryIdSet = new HashSet<string>(userLibraryIds);
+                            var originalCount = deserialized.Items.Count;
+                            deserialized.Items = deserialized.Items
+                                .Where(item => item.ParentId == null || libraryIdSet.Contains(item.ParentId))
+                                .ToList();
+                            deserialized.TotalRecordCount = deserialized.Items.Count;
+                            
+                            if (originalCount != deserialized.Items.Count)
+                            {
+                                this.Log.LogInformation("Filtered {removed} unauthorized items from search results", originalCount - deserialized.Items.Count);
+                            }
+                        }
+
                         if(deserialized.TotalRecordCount == 0)
                             return Content(JellyfinResponses.EmptySearchHints, "application/json");
 
@@ -355,7 +363,38 @@ public class SearchController : ControllerBase
                     if (responseStream == null)
                         return Content(JellyfinResponses.Empty, "application/json");
                     else
-                        return Content(await new StreamReader(responseStream).ReadToEndAsync(), "application/json");
+                    {
+                        // Deserialize to filter by user's accessible libraries
+                        var deserialized = await JsonSerializer.DeserializeAsync<JellyfinItemResponse>(responseStream);
+                        
+                        if (deserialized == null)
+                            return Content(JellyfinResponses.Empty, "application/json");
+                        
+                        // Filter items by user's accessible libraries
+                        if (userLibraryIds != null && userLibraryIds.Count > 0 && deserialized.Items != null)
+                        {
+                            var libraryIdSet = new HashSet<string>(userLibraryIds);
+                            var originalCount = deserialized.Items.Count;
+                            deserialized.Items = deserialized.Items
+                                .Where(item => item.ParentId == null || libraryIdSet.Contains(item.ParentId))
+                                .ToList();
+                            deserialized.TotalRecordCount = deserialized.Items.Count;
+                            
+                            if (originalCount != deserialized.Items.Count)
+                            {
+                                this.Log.LogInformation("Filtered {removed} unauthorized items from search results", originalCount - deserialized.Items.Count);
+                            }
+                        }
+                        
+                        if (deserialized.TotalRecordCount == 0)
+                            return Content(JellyfinResponses.Empty, "application/json");
+                        
+                        using Stream outputStream = new MemoryStream();
+                        await JsonSerializer.SerializeAsync(outputStream, deserialized, this.DefaultJsonOptions);
+                        outputStream.Position = 0;
+                        
+                        return Content(await new StreamReader(outputStream).ReadToEndAsync(), "application/json");
+                    }
                 }
             }
             else
