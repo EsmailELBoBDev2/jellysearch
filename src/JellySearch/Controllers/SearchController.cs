@@ -360,41 +360,12 @@ public class SearchController : ControllerBase
                 else
                 {
                     // Handle most Jellyfin routes expecting a root "Items" array
+                    // Note: We pass through without filtering here because deserializing and re-serializing
+                    // would strip fields that the Jellyfin client expects
                     if (responseStream == null)
                         return Content(JellyfinResponses.Empty, "application/json");
                     else
-                    {
-                        // Deserialize to filter by user's accessible libraries
-                        var deserialized = await JsonSerializer.DeserializeAsync<JellyfinItemResponse>(responseStream);
-                        
-                        if (deserialized == null)
-                            return Content(JellyfinResponses.Empty, "application/json");
-                        
-                        // Filter items by user's accessible libraries
-                        if (userLibraryIds != null && userLibraryIds.Count > 0 && deserialized.Items != null)
-                        {
-                            var libraryIdSet = new HashSet<string>(userLibraryIds);
-                            var originalCount = deserialized.Items.Count;
-                            deserialized.Items = deserialized.Items
-                                .Where(item => item.ParentId == null || libraryIdSet.Contains(item.ParentId))
-                                .ToList();
-                            deserialized.TotalRecordCount = deserialized.Items.Count;
-                            
-                            if (originalCount != deserialized.Items.Count)
-                            {
-                                this.Log.LogInformation("Filtered {removed} unauthorized items from search results", originalCount - deserialized.Items.Count);
-                            }
-                        }
-                        
-                        if (deserialized.TotalRecordCount == 0)
-                            return Content(JellyfinResponses.Empty, "application/json");
-                        
-                        using Stream outputStream = new MemoryStream();
-                        await JsonSerializer.SerializeAsync(outputStream, deserialized, this.DefaultJsonOptions);
-                        outputStream.Position = 0;
-                        
-                        return Content(await new StreamReader(outputStream).ReadToEndAsync(), "application/json");
-                    }
+                        return Content(await new StreamReader(responseStream).ReadToEndAsync(), "application/json");
                 }
             }
             else
