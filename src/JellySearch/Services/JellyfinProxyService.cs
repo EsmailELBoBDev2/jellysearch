@@ -79,7 +79,7 @@ public class JellyfinProxyService : IHostedService, IDisposable
         if (legacyToken != null)
             viewsRequest.Headers.TryAddWithoutValidation("X-Mediabrowser-Token", legacyToken);
 
-        HashSet<string> userViewNames = new();
+        HashSet<string> userViewNames = new(StringComparer.OrdinalIgnoreCase);
         HashSet<string> allIds = new();
 
         try
@@ -137,13 +137,20 @@ public class JellyfinProxyService : IHostedService, IDisposable
                 }
             }
 
-            // Return library NAMES instead of IDs - this matches the TopParentId field which now stores library names
-            // Normalize to lowercase for case-insensitive matching
-            if (userViewNames.Count > 0)
+            // Return library IDs (GUIDs) normalized to 32-char hex strings
+            if (allIds.Count > 0)
             {
-                var normalizedNames = userViewNames.Select(n => n.ToLowerInvariant()).ToList();
-                this.Log.LogInformation("User {userId} accessible libraries (normalized): {names}", userId, string.Join(", ", normalizedNames));
-                return normalizedNames;
+                var normalizedIds = new List<string>();
+                foreach(var id in allIds)
+                {
+                    if(Guid.TryParse(id, out var guid))
+                    {
+                        normalizedIds.Add(guid.ToString("N"));
+                    }
+                }
+                
+                this.Log.LogInformation("User {userId} accessible library IDs (normalized): {ids}", userId, string.Join(", ", normalizedIds));
+                return normalizedIds;
             }
         }
         catch (Exception ex)

@@ -127,49 +127,12 @@ public class IndexJob : IJob
                 }
             }
 
-            if (items.Count > 0)
-            {
-                // Build a mapping from TopParentId to library name
-                var uniqueTopParentIds = items
-                    .Where(x => x.TopParentId != null)
-                    .Select(x => x.TopParentId!)
-                    .Distinct()
-                    .ToList();
-                
-                var topParentIdToName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                
-                if (uniqueTopParentIds.Count > 0)
-                {
-                    // Query the database for the names of TopParentId items
-                    using var nameCommand = connection.CreateCommand();
-                    if (legacy)
-                        nameCommand.CommandText = "SELECT guid, Name FROM TypedBaseItems WHERE guid IN (" + 
-                            string.Join(",", uniqueTopParentIds.Select(id => "'" + id + "'")) + ")";
-                    else
-                        nameCommand.CommandText = "SELECT id, Name FROM BaseItems WHERE id IN (" + 
-                            string.Join(",", uniqueTopParentIds.Select(id => "'" + id + "'")) + ")";
-                    
-                    using var nameReader = await nameCommand.ExecuteReaderAsync();
-                    while (await nameReader.ReadAsync())
-                    {
-                        var guid = nameReader.GetGuid(0).ToString().ToUpperInvariant();
-                        var name = !nameReader.IsDBNull(1) ? nameReader.GetString(1) : null;
-                        if (name != null)
-                        {
-                            topParentIdToName[guid] = name;
-                        }
-                    }
-                    
-                    this.Log.LogInformation("TopParentId → Name mapping: {mapping}", 
-                        string.Join(", ", topParentIdToName.Take(10).Select(kv => kv.Key + "=" + kv.Value)));
-                }
-                
-                // Update items with library name instead of TopParentId
+                // Normalize TopParentId to 32-character hex string (no dashes) for consistent matching
                 foreach (var item in items)
                 {
-                    if (item.TopParentId != null && topParentIdToName.TryGetValue(item.TopParentId.ToUpperInvariant(), out var libraryName))
+                    if (Guid.TryParse(item.TopParentId, out var guid))
                     {
-                        item.TopParentId = libraryName.ToLowerInvariant(); // Store lowercase name for matching
+                        item.TopParentId = guid.ToString("N");
                     }
                 }
 
