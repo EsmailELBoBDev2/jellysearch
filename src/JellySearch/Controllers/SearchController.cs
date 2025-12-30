@@ -166,7 +166,8 @@ public class SearchController : ControllerBase
                     // TopParentId in the database stores the root library folder ID
                     var libraryFilter = "topParentId IN [" + string.Join(", ", userLibraryIds.Select(id => "\"" + id + "\"")) + "]";
                     additionalFilters.Add(libraryFilter);
-                    this.Log.LogDebug("Filtering by user libraries: {filter}", libraryFilter);
+                    this.Log.LogInformation("Library filter enabled. User {userId} has access to libraries: {libraries}", userId, string.Join(", ", userLibraryIds));
+                    this.Log.LogDebug("Meilisearch filter: {filter}", libraryFilter);
                 }
                 else
                 {
