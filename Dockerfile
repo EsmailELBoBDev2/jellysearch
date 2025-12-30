@@ -27,4 +27,4 @@ USER 1000:100
 EXPOSE 5000
 
 WORKDIR /app
-ENTRYPOINT ["dotnet", "JellySearch.dll"]
+ENTRYPOINT ["dotnet", "jellysearch.dll"]
